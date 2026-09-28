@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hands</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Shrikhand&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tan: #FDF0E6;
+      --pink: #F08E80;
+      --blue: #0B0D63;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      background: var(--tan);
+      font-family: -apple-system, Helvetica, Arial, sans-serif;
+    }
+
+    /* Top bar + footer */
+    .topbar, .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 5rem;
+      padding: 1rem 2rem;
+    }
+    .topbar { background: var(--tan); }
+    .footer { background: var(--blue); }
+
+    .brand {
+      margin: 0;
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      font-size: 2.5rem;
+      line-height: 1;
+      color: var(--pink);
+    }
+
+    /* Sections */
+    .section { padding: 4rem 2rem; }
+    .bg-tan  { background: var(--tan); }
+    .bg-pink { background: var(--pink); }
+    .bg-blue { background: var(--blue); }
+
+    .section-title {
+      margin: 0 0 2.5rem;
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      font-size: 4rem;
+      line-height: 1.1;
+      text-align: center;
+    }
+    .title-pink  { color: #F08E80; }
+    .title-white { color: #ffffff; }
+    .title-black { color: #000000; }
+    .title-blue  { color: #0B0D63; }
+
+    /* Block widths (always centred) */
+    .block { margin: 0 auto 1.5rem; }
+    .block:last-child { margin-bottom: 0; }
+    .block-wide        { width: 100%; }
+    .block-narrow      { width: max(70%, 360px); max-width: 100%; }
+    .block-very-narrow { width: max(40%, 360px); max-width: 100%; }
+
+    /* Mobile: every block goes full width */
+    @media (max-width: 768px) {
+      .topbar, .footer { padding: 0.75rem 1rem; }
+      .section { padding: 2.5rem 1rem; }
+      .section-title { font-size: 2.6rem; margin-bottom: 1.5rem; }
+      .block-narrow, .block-very-narrow { width: 100%; }
+    }
+  </style>
+
+  <!-- Chart.js is loaded once here. If a network filter blocks this CDN, each
+       chart block has its own built-in fallback loader, so nothing breaks. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <header class="topbar">
+    <h1 class="brand">Hands</h1>
+  </header>
+
+  <!-- Section 1: no header, tan, narrow -->
+  <section class="section bg-tan" id="add-round">
+      <div class="block block-narrow">
+        <div id="add-round-wrap" style="background:#FDF0E6; border-radius:8px; padding:20px; max-width:480px; margin:0 auto;">
+          <div style="font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:#000000; padding:0 0 16px;">Add Round</div>
+
+          <form id="add-round-form">
+            <div style="display:grid; grid-template-columns:auto 1fr 1fr; gap:10px 14px; align-items:center;">
+              <div></div>
+              <div style="font-size:12px; font-weight:700; color:#000000; text-align:center;">Score</div>
+              <div style="font-size:12px; font-weight:700; color:#000000; text-align:center;">Beers</div>
+
+              <label for="adamScore" style="display:flex; align-items:center; gap:7px; font-family:'Fraunces', serif; font-weight:700; color:#000000;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#746CF0;"></span>Adam</label>
+              <input type="number" step="any" id="adamScore" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+              <input type="number" step="1" min="0" id="adamBeers" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+
+              <label for="ewanScore" style="display:flex; align-items:center; gap:7px; font-family:'Fraunces', serif; font-weight:700; color:#000000;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6CF0A6;"></span>Ewan</label>
+              <input type="number" step="any" id="ewanScore" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+              <input type="number" step="1" min="0" id="ewanBeers" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+
+              <label for="gerryScore" style="display:flex; align-items:center; gap:7px; font-family:'Fraunces', serif; font-weight:700; color:#000000;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#F0DB6C;"></span>Gerry</label>
+              <input type="number" step="any" id="gerryScore" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+              <input type="number" step="1" min="0" id="gerryBeers" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+
+              <label for="jonnyScore" style="display:flex; align-items:center; gap:7px; font-family:'Fraunces', serif; font-weight:700; color:#000000;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#566070;"></span>Jonny</label>
+              <input type="number" step="any" id="jonnyScore" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+              <input type="number" step="1" min="0" id="jonnyBeers" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-top:16px;">
+              <label for="calledBy" style="display:block; font-size:13px; font-weight:700; color:#000000; margin-bottom:6px;">Who called it?</label>
+              <select id="calledBy" style="width:100%; padding:8px; border-radius:6px; border:1px solid #d8c2b3; box-sizing:border-box;">
+                <option value="No Call" selected>No Call</option>
+                <option value="Adam">Adam</option>
+                <option value="Ewan">Ewan</option>
+                <option value="Gerry">Gerry</option>
+                <option value="Jonny">Jonny</option>
+              </select>
+            </div>
+
+            <button type="submit" id="add-round-submit" style="
+                margin-top:18px;
+                width:100%;
+                background:#0B0D63;
+                color:#ffffff;
+                border:none;
+                border-radius:6px;
+                padding:12px;
+                font-family:'Fraunces', serif;
+                font-weight:700;
+                font-size:15px;
+                cursor:pointer;">Add Round</button>
+
+            <div id="add-round-status" style="margin-top:12px; font-size:13px; font-weight:600; display:none;"></div>
+          </form>
+        </div>
+
+        <script>
+        (function () {
+          // Paste the URL from your Apps Script deployment (ends in /exec) here:
+          var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyu3hEWoO5Qx_4iFyIghKgdF_aOqXhxwtZG7dZpj4s6iZG-Jlb1t659Jzu5Ca-2baGwsQ/exec";
+
+          var form = document.getElementById("add-round-form");
+          var submitBtn = document.getElementById("add-round-submit");
+          var statusEl = document.getElementById("add-round-status");
+
+          function showStatus(msg, isError) {
+            statusEl.textContent = msg;
+            statusEl.style.display = "block";
+            statusEl.style.color = isError ? "#b3261e" : "#1a7a3c";
+          }
+
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            if (APPS_SCRIPT_URL.indexOf("YOUR_APPS_SCRIPT_URL_HERE") !== -1) {
+              showStatus("Setup needed: paste your Apps Script URL into the code block first.", true);
+              return;
+            }
+
+            var payload = {
+              adamScore: document.getElementById("adamScore").value,
+              ewanScore: document.getElementById("ewanScore").value,
+              gerryScore: document.getElementById("gerryScore").value,
+              jonnyScore: document.getElementById("jonnyScore").value,
+              calledBy: document.getElementById("calledBy").value,
+              adamBeers: document.getElementById("adamBeers").value,
+              ewanBeers: document.getElementById("ewanBeers").value,
+              gerryBeers: document.getElementById("gerryBeers").value,
+              jonnyBeers: document.getElementById("jonnyBeers").value
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Adding...";
+            statusEl.style.display = "none";
+
+            // Apps Script web apps don't return CORS headers, so we use mode:"no-cors"
+            // (meaning we can't read the response) with a text/plain content type
+            // to avoid triggering a blocked CORS preflight request.
+            fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify(payload)
+            })
+              .then(function () {
+                showStatus("Round added!", false);
+                form.reset();
+                document.getElementById("calledBy").value = "No Call";
+              })
+              .catch(function (err) {
+                console.error("Add Round: failed to submit", err);
+                showStatus("Couldn't submit — check your connection and try again.", true);
+              })
+              .finally(function () {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Add Round";
+              });
+          });
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 2: The Recent, blue, wide -->
+  <section class="section bg-blue" id="recent">
+    <h2 class="section-title title-pink">The Recent</h2>
+      <div class="block block-wide">
+        <div id="recent-score-wrap" style="position:relative; background:#0B0D63; border-radius:8px; padding:16px;">
+          <div style="font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:#ffffff; padding:0 4px 8px;">Last Five Rounds</div>
+          <div id="recent-score-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 12px;"></div>
+          <div style="width:100%; height:150px;">
+            <canvas id="recent-score-canvas"></canvas>
+          </div>
+        </div>
+
+        <script>
+        (function () {
+          var CHART_JS_URLS = [
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js",
+            "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+          ];
+
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Web";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          var BACKGROUND_COLOR = "#0B0D63";
+
+          // Web!E2:H2 -> row index 1, columns E-H = indices 4-7
+          var PLAYERS = [
+            { name: "Adam",  col: 4, color: "#8D85FF" },
+            { name: "Ewan",  col: 5, color: "#6CF0A6" },
+            { name: "Gerry", col: 6, color: "#F0DB6C" },
+            { name: "Jonny", col: 7, color: "#6F7989" }
+          ];
+
+          var chart = null;
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("recent-score-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function buildValues(rows) {
+            var dataRow = rows[1] || [];
+            return PLAYERS.map(function (player) {
+              var raw = dataRow[player.col];
+              var val = (raw === undefined || raw.trim() === "") ? null : parseFloat(raw);
+              return { player: player, value: isNaN(val) ? null : val };
+            });
+          }
+
+          // Plugin: fills the whole canvas with the block's background colour
+          var backgroundPlugin = {
+            id: "recentScoreBackground",
+            beforeDraw: function (c) {
+              var ctx = c.ctx;
+              ctx.save();
+              ctx.fillStyle = BACKGROUND_COLOR;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.restore();
+            }
+          };
+
+          // Plugin: draws "Name  Value" in large Fraunces, in the player's colour,
+          // to the right of the tip of each bar
+          var nameValueLabelPlugin = {
+            id: "recentScoreLabels",
+            afterDatasetsDraw: function (c) {
+              var ctx = c.ctx;
+              var meta = c.getDatasetMeta(0);
+              var entries = c.data.entries;
+
+              entries.forEach(function (entry, i) {
+                var point = meta.data[i];
+                if (!point || entry.value === null) return;
+
+                ctx.save();
+                ctx.fillStyle = entry.player.color;
+                ctx.font = "700 22px 'Fraunces', serif";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(entry.player.name + "  " + entry.value, point.x + 12, point.y);
+                ctx.restore();
+              });
+            }
+          };
+
+          function renderChart(entries) {
+            var ctx = document.getElementById("recent-score-canvas").getContext("2d");
+
+            var config = {
+              type: "bar",
+              data: {
+                labels: entries.map(function (e) { return e.player.name; }),
+                entries: entries,
+                datasets: [{
+                  data: entries.map(function (e) { return e.value; }),
+                  backgroundColor: entries.map(function (e) { return e.player.color; }),
+                  borderWidth: 0,
+                  borderRadius: 4,
+                  categoryPercentage: 0.85,
+                  barPercentage: 0.95
+                }]
+              },
+              options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 170, top: 8, bottom: 8, left: 4 } },
+                scales: {
+                  x: { display: false, grid: { display: false } },
+                  y: { display: false, grid: { display: false } }
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { enabled: false }
+                }
+              },
+              plugins: [backgroundPlugin, nameValueLabelPlugin]
+            };
+
+            if (chart) {
+              chart.destroy();
+            }
+            chart = new Chart(ctx, config);
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                var entries = buildValues(rows);
+                renderChart(entries);
+              })
+              .catch(function (err) {
+                console.error("Recent Score: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+
+          function init() {
+            loadData();
+          }
+
+          // Load Chart.js ourselves and only start once it has actually finished loading,
+          // rather than relying on <script> tag order. Tries a couple of CDN mirrors
+          // in case one is blocked by an extension/network filter.
+          function loadChartJs(urls, index) {
+            if (index >= urls.length) {
+              showError("Couldn't load the charting library from any source (likely an ad-blocker or network filter blocking script CDNs).");
+              return;
+            }
+            var s = document.createElement("script");
+            s.src = urls[index];
+            s.onload = init;
+            s.onerror = function () { loadChartJs(urls, index + 1); };
+            document.head.appendChild(s);
+          }
+
+          if (window.Chart) {
+            init();
+          } else {
+            loadChartJs(CHART_JS_URLS, 0);
+          }
+        })();
+        </script>
+      </div>
+      <div class="block block-wide">
+        <div id="last-round-wrap" style="background:#0B0D63; border-radius:8px; padding:20px 20px 10px;">
+          <div style="font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:#ffffff; padding:0 4px 14px;">Last Round</div>
+          <div id="last-round-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 12px;"></div>
+          <div id="last-round-values" style="
+              display:grid;
+              grid-template-columns:repeat(4, 1fr);
+              gap:12px;
+              text-align:center;"></div>
+        </div>
+
+        <script>
+        (function () {
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Web";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          // Web!E3:H3 -> row index 2, columns E-H = indices 4-7
+          var PLAYERS = [
+            { name: "Adam",  col: 4, color: "#8D85FF" },
+            { name: "Ewan",  col: 5, color: "#6CF0A6" },
+            { name: "Gerry", col: 6, color: "#F0DB6C" },
+            { name: "Jonny", col: 7, color: "#6F7989" }
+          ];
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("last-round-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function renderValues(rows) {
+            var dataRow = rows[2] || [];
+            var container = document.getElementById("last-round-values");
+            container.innerHTML = "";
+
+            PLAYERS.forEach(function (player) {
+              var raw = dataRow[player.col];
+              var text = (raw === undefined || raw.trim() === "") ? "–" : raw.trim();
+
+              var item = document.createElement("div");
+
+              var value = document.createElement("div");
+              value.textContent = text;
+              value.style.fontFamily = "'Fraunces', serif";
+              value.style.fontWeight = "700";
+              value.style.fontSize = "36px";
+              value.style.color = player.color;
+              value.style.lineHeight = "1.1";
+
+              var name = document.createElement("div");
+              name.textContent = player.name;
+              name.style.fontFamily = "'Fraunces', serif";
+              name.style.fontWeight = "600";
+              name.style.fontSize = "18px";
+              name.style.color = player.color;
+              name.style.marginTop = "4px";
+
+              item.appendChild(value);
+              item.appendChild(name);
+              container.appendChild(item);
+            });
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                renderValues(rows);
+              })
+              .catch(function (err) {
+                console.error("Last Round: failed to load sheet data", err);
+                showError("Couldn't load values: " + err.message);
+              });
+          }
+
+          loadData();
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 3: The Scores (graph), pink, wide -->
+  <section class="section bg-pink" id="score-graph">
+    <h2 class="section-title title-white">The Scores</h2>
+      <div class="block block-wide">
+        <div id="hands-scoreboard-wrap" style="position:relative; max-width:100%; background:#F08E80; border-radius:8px; padding:16px 16px 8px;">
+          <button id="hands-refresh-btn" title="Refresh data" style="
+              position:absolute; top:12px; left:12px; z-index:10;
+              background:#ffffff; border:none; border-radius:6px;
+              width:34px; height:34px; cursor:pointer; font-size:16px;
+              box-shadow:0 1px 3px rgba(0,0,0,0.25); line-height:1;">⟳</button>
+          <div id="hands-scoreboard-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 8px;"></div>
+          <div id="hands-legend" style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:4px 20px;
+              justify-content:center;
+              padding:4px 8px 2px;
+              max-width:220px;
+              margin:0 auto;"></div>
+          <div style="width:100%; height:420px;">
+            <canvas id="hands-scoreboard-canvas"></canvas>
+          </div>
+        </div>
+
+        <script>
+        (function () {
+          var CHART_JS_URLS = [
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js",
+            "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+          ];
+
+          // Uses the sheet's real ID with the gviz/tq endpoint (more reliable CORS support
+          // than the "Publish to web" CSV link). Sheet just needs to be shared as
+          // "Anyone with the link – Viewer" (Publish to web is not required for this).
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Scores";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          var PLAYERS = [
+            { name: "Adam",  col: 0, color: "#746CF0" },
+            { name: "Ewan",  col: 1, color: "#6CF0A6" },
+            { name: "Gerry", col: 2, color: "#F0DB6C" },
+            { name: "Jonny", col: 3, color: "#566070" }
+          ];
+
+          var BACKGROUND_COLOR = "#F08E80";
+          var chart = null;
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function buildDatasets(rows) {
+            // Sheet ranges start at row 3 (Scores!A3 etc), so skip the first two CSV rows.
+            var dataRows = rows.slice(2);
+
+            return PLAYERS.map(function (player) {
+              var points = [];
+              var latest = null;
+
+              dataRows.forEach(function (row, i) {
+                var raw = row[player.col];
+                if (raw === undefined) return;
+                raw = raw.trim();
+                if (raw === "") return; // ignore empty rows for this player
+
+                var val = parseFloat(raw);
+                if (isNaN(val)) return;
+
+                points.push({ x: i + 1, y: val });
+                latest = val;
+              });
+
+              return {
+                label: player.name,
+                data: points,
+                borderColor: player.color,
+                backgroundColor: player.color,
+                pointBackgroundColor: player.color,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderWidth: 2.5,
+                tension: 0.15,
+                latestScore: latest
+              };
+            });
+          }
+
+          // Plugin: fills the whole canvas with the chart background colour
+          var backgroundPlugin = {
+            id: "handsBackground",
+            beforeDraw: function (c) {
+              var ctx = c.ctx;
+              ctx.save();
+              ctx.fillStyle = BACKGROUND_COLOR;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.restore();
+            }
+          };
+
+          // Plugin: draws each player's latest score to the right of their line's last point
+          var latestScorePlugin = {
+            id: "handsLatestScore",
+            afterDatasetsDraw: function (c) {
+              var ctx = c.ctx;
+              c.data.datasets.forEach(function (ds, i) {
+                var meta = c.getDatasetMeta(i);
+                if (!meta.data.length || ds.latestScore === null) return;
+                var lastPoint = meta.data[meta.data.length - 1];
+
+                ctx.save();
+                ctx.fillStyle = ds.borderColor;
+                ctx.font = "700 18px 'Fraunces', serif";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(ds.latestScore, lastPoint.x + 8, lastPoint.y);
+                ctx.restore();
+              });
+            }
+          };
+
+          function renderLegend() {
+            var el = document.getElementById("hands-legend");
+            el.innerHTML = "";
+            PLAYERS.forEach(function (player) {
+              var item = document.createElement("div");
+              item.style.display = "flex";
+              item.style.alignItems = "center";
+              item.style.gap = "6px";
+
+              var swatch = document.createElement("span");
+              swatch.style.display = "inline-block";
+              swatch.style.width = "16px";
+              swatch.style.height = "3px";
+              swatch.style.borderRadius = "2px";
+              swatch.style.backgroundColor = player.color;
+
+              var label = document.createElement("span");
+              label.textContent = player.name;
+              label.style.color = "#ffffff";
+              label.style.fontFamily = "'Fraunces', serif";
+              label.style.fontWeight = "700";
+              label.style.fontSize = "12px";
+
+              item.appendChild(swatch);
+              item.appendChild(label);
+              el.appendChild(item);
+            });
+          }
+
+          function renderChart(datasets) {
+            var ctx = document.getElementById("hands-scoreboard-canvas").getContext("2d");
+
+            if (chart) {
+              chart.data.datasets = datasets;
+              chart.update();
+              return;
+            }
+
+            chart = new Chart(ctx, {
+              type: "line",
+              data: { datasets: datasets },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 56, top: 8, bottom: 8 } },
+                interaction: { intersect: false, mode: "nearest" },
+                scales: {
+                  x: {
+                    type: "linear",
+                    display: true,
+                    grid: { display: false, drawTicks: false },
+                    ticks: { display: false },
+                    title: { display: false }
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 50,
+                      color: "#ffffff",
+                      font: { weight: "600" }
+                    },
+                    grid: { color: "rgba(255,255,255,0.35)" }
+                  }
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      title: function () { return ""; }
+                    }
+                  }
+                }
+              },
+              plugins: [backgroundPlugin, latestScorePlugin]
+            });
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("hands-scoreboard-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                var datasets = buildDatasets(rows);
+                renderChart(datasets);
+              })
+              .catch(function (err) {
+                console.error("Hands Scoreboard: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+
+          document.getElementById("hands-refresh-btn").addEventListener("click", loadData);
+
+          renderLegend();
+
+          function init() {
+            loadData();
+          }
+
+          // Load Chart.js ourselves and only start once it has actually finished loading,
+          // rather than relying on <script> tag order (Squarespace code blocks can
+          // inject scripts in a way that breaks that guarantee). Tries a couple of
+          // CDN mirrors in case one is blocked by an extension/network filter.
+          function loadChartJs(urls, index) {
+            if (index >= urls.length) {
+              showError("Couldn't load the charting library from any source (likely an ad-blocker or network filter blocking script CDNs).");
+              return;
+            }
+            var s = document.createElement("script");
+            s.src = urls[index];
+            s.onload = init;
+            s.onerror = function () { loadChartJs(urls, index + 1); };
+            document.head.appendChild(s);
+          }
+
+          if (window.Chart) {
+            init();
+          } else {
+            loadChartJs(CHART_JS_URLS, 0);
+          }
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 4: The Beers, tan, narrow -->
+  <section class="section bg-tan" id="beers">
+    <h2 class="section-title title-black">The Beers</h2>
+      <div class="block block-narrow">
+        <div id="beer-scoreboard-wrap" style="background:#FDF0E6; border-radius:8px; padding:16px;">
+          <div id="beer-scoreboard-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 12px;"></div>
+          <div id="beer-scoreboard-grid" style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:16px;
+              width:100%;">
+            <div style="height:260px;"><canvas id="beer-chart-adam"></canvas></div>
+            <div style="height:260px;"><canvas id="beer-chart-ewan"></canvas></div>
+            <div style="height:260px;"><canvas id="beer-chart-gerry"></canvas></div>
+            <div style="height:260px;"><canvas id="beer-chart-jonny"></canvas></div>
+          </div>
+        </div>
+
+        <style>
+          @media (max-width: 640px) {
+            #beer-scoreboard-grid { grid-template-columns: 1fr !important; }
+          }
+        </style>
+
+        <script>
+        (function () {
+          var CHART_JS_URLS = [
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js",
+            "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+          ];
+
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Stats";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          var BACKGROUND_COLOR = "#FDF0E6";
+          var CATEGORY_LABELS = ["1 beer", "2 beers", "3 beers", "4 beers", "5 beers"];
+
+          var PLAYERS = [
+            { name: "Adam",  col: 1, color: "#746CF0", canvasId: "beer-chart-adam" },
+            { name: "Ewan",  col: 2, color: "#6CF0A6", canvasId: "beer-chart-ewan" },
+            { name: "Gerry", col: 3, color: "#F0DB6C", canvasId: "beer-chart-gerry" },
+            { name: "Jonny", col: 4, color: "#566070", canvasId: "beer-chart-jonny" }
+          ];
+
+          var charts = {};
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("beer-scoreboard-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          // Rows 25-29 (1-indexed sheet rows) => indices 24-28 in the parsed CSV array
+          function buildPlayerValues(rows) {
+            var dataRows = rows.slice(24, 29);
+
+            return PLAYERS.map(function (player) {
+              var validValues = dataRows.map(function (row) {
+                var raw = row[player.col];
+                if (raw === undefined || raw.trim() === "") return null;
+                var val = parseFloat(raw);
+                return isNaN(val) ? null : val;
+              });
+
+              return { player: player, validValues: validValues };
+            });
+          }
+
+          function computeSharedRange(playerValueSets) {
+            var all = [];
+            playerValueSets.forEach(function (set) {
+              set.validValues.forEach(function (v) { if (v !== null) all.push(v); });
+            });
+            if (!all.length) return { min: 0, max: 1 };
+
+            var dataMax = Math.max.apply(null, all);
+            var pad = (dataMax || 1) * 0.15;
+
+            return { min: 0, max: Math.ceil(dataMax + pad) };
+          }
+
+          // Plugin: fills the whole canvas with the block's background colour
+          var backgroundPlugin = {
+            id: "beerBackground",
+            beforeDraw: function (c) {
+              var ctx = c.ctx;
+              ctx.save();
+              ctx.fillStyle = BACKGROUND_COLOR;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.restore();
+            }
+          };
+
+          // Plugin factory: draws a beer emoji above the player's lowest recorded
+          // score (blank/missing cells are never picked, since they aren't real data)
+          function makeLowestEmojiPlugin(validValues) {
+            return {
+              id: "beerLowestEmoji",
+              afterDatasetsDraw: function (c) {
+                var ctx = c.ctx;
+
+                var minIndex = -1;
+                var minVal = null;
+                validValues.forEach(function (v, i) {
+                  if (v === null || v === undefined) return;
+                  if (minVal === null || v < minVal) { minVal = v; minIndex = i; }
+                });
+                if (minIndex === -1) return;
+
+                var meta = c.getDatasetMeta(0);
+                var point = meta.data[minIndex];
+                if (!point) return;
+
+                ctx.save();
+                ctx.font = "18px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                ctx.fillText("\uD83C\uDF7A", point.x, point.y - 8);
+                ctx.restore();
+              }
+            };
+          }
+
+
+          function renderCharts(playerValueSets, yRange) {
+            playerValueSets.forEach(function (set) {
+              var player = set.player;
+              var canvas = document.getElementById(player.canvasId);
+              var ctx = canvas.getContext("2d");
+
+              var config = {
+                type: "bar",
+                data: {
+                  labels: CATEGORY_LABELS,
+                  datasets: [{
+                    label: player.name,
+                    data: set.validValues,
+                    backgroundColor: player.color,
+                    borderColor: player.color,
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    categoryPercentage: 0.7,
+                    barPercentage: 0.9
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  layout: { padding: { top: 24, right: 12, bottom: 4, left: 4 } },
+                  scales: {
+                    x: {
+                      grid: { display: false },
+                      ticks: { color: "#3a2a26", font: { weight: "600" } }
+                    },
+                    y: {
+                      min: yRange.min,
+                      max: yRange.max,
+                      ticks: { color: "#3a2a26" },
+                      grid: { color: "rgba(58,42,38,0.1)" }
+                    }
+                  },
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: function (ctx) {
+                          var real = set.validValues[ctx.dataIndex];
+                          return player.name + ": " + (real === null ? "No data" : real);
+                        }
+                      }
+                    },
+                    title: {
+                      display: true,
+                      text: player.name,
+                      color: "#3a2a26",
+                      font: { size: 16, weight: "700", family: "Fraunces, serif" },
+                      padding: { bottom: 8 }
+                    }
+                  }
+                },
+                plugins: [backgroundPlugin, makeLowestEmojiPlugin(set.validValues)]
+              };
+
+              if (charts[player.canvasId]) {
+                charts[player.canvasId].destroy();
+              }
+              charts[player.canvasId] = new Chart(ctx, config);
+            });
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                var playerValueSets = buildPlayerValues(rows);
+                var yRange = computeSharedRange(playerValueSets);
+                renderCharts(playerValueSets, yRange);
+              })
+              .catch(function (err) {
+                console.error("Beer Scoreboard: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+
+          function init() {
+            loadData();
+          }
+
+          // Load Chart.js ourselves and only start once it has actually finished loading,
+          // rather than relying on <script> tag order. Tries a couple of CDN mirrors
+          // in case one is blocked by an extension/network filter.
+          function loadChartJs(urls, index) {
+            if (index >= urls.length) {
+              showError("Couldn't load the charting library from any source (likely an ad-blocker or network filter blocking script CDNs).");
+              return;
+            }
+            var s = document.createElement("script");
+            s.src = urls[index];
+            s.onload = init;
+            s.onerror = function () { loadChartJs(urls, index + 1); };
+            document.head.appendChild(s);
+          }
+
+          if (window.Chart) {
+            init();
+          } else {
+            loadChartJs(CHART_JS_URLS, 0);
+          }
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 5: The Stats, blue, narrow -->
+  <section class="section bg-blue" id="stats">
+    <h2 class="section-title title-pink">The Stats</h2>
+      <div class="block block-narrow">
+        <div id="stats-grid-wrap" style="background:#0B0D63; border-radius:8px; padding:20px; overflow-x:auto;">
+          <div id="stats-grid-error" style="display:none; color:#ffb4a8; font-weight:600; font-size:13px; padding:4px 4px 12px;"></div>
+          <table id="stats-grid-table" style="
+              width:100%;
+              border-collapse:collapse;
+              font-family:-apple-system, Helvetica, Arial, sans-serif;
+              font-size:14px;">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <script>
+        (function () {
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Stats";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          var PLAYER_COLORS = ["#746CF0", "#6CF0A6", "#F0DB6C", "#7E8898"]; // Adam, Ewan, Gerry, Jonny (columns B-E)
+          var HEADER_COLOR = "#ffffff";
+          var DIVIDER_COLOR = "rgba(255,255,255,0.25)";
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("stats-grid-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function cell(text, opts) {
+            opts = opts || {};
+            var td = document.createElement(opts.header ? "th" : "td");
+            td.textContent = text;
+            td.style.textAlign = opts.align || "left";
+            td.style.padding = opts.header ? "8px 14px 12px" : "5px 14px";
+            td.style.color = opts.color || HEADER_COLOR;
+            td.style.fontWeight = opts.bold ? "700" : "400";
+            td.style.fontSize = opts.header ? "20px" : "14px";
+            td.style.fontFamily = opts.header ? "'Fraunces', serif" : "inherit";
+            td.style.borderBottom = opts.dividerWeight
+              ? "2px solid " + DIVIDER_COLOR
+              : "1px solid " + DIVIDER_COLOR;
+            td.style.whiteSpace = "nowrap";
+            return td;
+          }
+
+          function renderTable(rows) {
+            // Stats!A1:E30 -> CSV rows 0-29 (30 rows), columns A-E (indices 0-4)
+            var dataRows = rows.slice(0, 30);
+            var headerRow = dataRows[0] || [];
+            var bodyRows = dataRows.slice(1);
+
+            var table = document.getElementById("stats-grid-table");
+            var thead = table.querySelector("thead");
+            var tbody = table.querySelector("tbody");
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+
+            // Header row: A1 (corner, left blank/label) + B1:E1 player names
+            var headTr = document.createElement("tr");
+            headTr.appendChild(cell(headerRow[0] || "", { header: true, bold: true, color: HEADER_COLOR, dividerWeight: true }));
+            for (var c = 1; c <= 4; c++) {
+              headTr.appendChild(cell(headerRow[c] || "", {
+                header: true, bold: true, align: "right",
+                color: PLAYER_COLORS[c - 1], dividerWeight: true
+              }));
+            }
+            thead.appendChild(headTr);
+
+            // Data rows: column A label (white) + B:E values (player colours)
+            bodyRows.forEach(function (row) {
+              // Skip fully empty rows
+              var hasContent = row.some(function (v) { return v && v.trim() !== ""; });
+              if (!hasContent) return;
+
+              var tr = document.createElement("tr");
+              tr.appendChild(cell(row[0] || "", { color: HEADER_COLOR }));
+              for (var c = 1; c <= 4; c++) {
+                tr.appendChild(cell(row[c] || "", { align: "right", color: PLAYER_COLORS[c - 1] }));
+              }
+              tbody.appendChild(tr);
+            });
+
+            // Remove the bottom border on the very last row
+            var lastRow = tbody.lastElementChild;
+            if (lastRow) {
+              Array.prototype.forEach.call(lastRow.children, function (td) {
+                td.style.borderBottom = "none";
+              });
+            }
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                renderTable(rows);
+              })
+              .catch(function (err) {
+                console.error("Stats Grid: failed to load sheet data", err);
+                showError("Couldn't load stats: " + err.message);
+              });
+          }
+
+          loadData();
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 6: The Scoreboard, pink, very narrow -->
+  <section class="section bg-pink" id="scoreboard">
+    <h2 class="section-title title-blue">The Scoreboard</h2>
+      <div class="block block-very-narrow">
+        <div id="scoreboard-table-wrap" style="background:#F08E80; border-radius:8px; padding:10px;">
+          <div id="scoreboard-table-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 10px;"></div>
+          <div style="max-height:420px; overflow-y:auto; border-radius:6px;">
+            <table id="scoreboard-table" style="
+                width:100%;
+                border-collapse:collapse;
+                font-family:-apple-system, Helvetica, Arial, sans-serif;
+                font-size:12px;">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+ 
+        <script>
+        (function () {
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SCORES_CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent("Scores");
+          var ENTRY_CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent("Entry");
+ 
+          var BACKGROUND_COLOR = "#F08E80";
+          var WHITE = "#ffffff";
+          var HIGHLIGHT_COLOR = "#0B0D63";
+          var CORRECT_COLOR = "#2e7d32";
+          var INCORRECT_COLOR = "#8b1a1a";
+          var DIVIDER_COLOR = "rgba(255,255,255,0.4)";
+ 
+          // Scores!A3:D403 -> columns A-D = indices 0-3
+          var PLAYERS = [
+            { name: "Adam",  col: 0, color: "#746CF0" },
+            { name: "Ewan",  col: 1, color: "#6CF0A6" },
+            { name: "Gerry", col: 2, color: "#F0DB6C" },
+            { name: "Jonny", col: 3, color: "#566070" }
+          ];
+ 
+          // Entry tab: column E (index 4) = who called it ("No Call" or a player name)
+          // column F (index 5) = 0/1 result formula, only meaningful when E isn't "No Call"
+          var ENTRY_CALLED_COL = 4;
+          var ENTRY_RESULT_COL = 5;
+ 
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+ 
+          function showError(msg) {
+            var el = document.getElementById("scoreboard-table-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+ 
+          function headerCell(text, color) {
+            var th = document.createElement("th");
+            th.textContent = text;
+            th.style.textAlign = "center";
+            th.style.padding = "2px 4px 8px";
+            th.style.color = color;
+            th.style.fontFamily = "'Fraunces', serif";
+            th.style.fontWeight = "700";
+            th.style.fontSize = "15px";
+            th.style.borderBottom = "2px solid " + DIVIDER_COLOR;
+            th.style.position = "sticky";
+            th.style.top = "0";
+            th.style.background = BACKGROUND_COLOR;
+            return th;
+          }
+ 
+          function valueCell(raw, highlight) {
+            var td = document.createElement("td");
+            td.style.textAlign = "center";
+            td.style.padding = "2px 4px";
+            td.style.borderBottom = "1px solid " + DIVIDER_COLOR;
+ 
+            if (raw === null) {
+              td.innerHTML = "&nbsp;";
+              return td;
+            }
+ 
+            var span = document.createElement("span");
+            span.textContent = raw;
+            span.style.color = WHITE;
+            span.style.fontWeight = highlight ? "800" : "500";
+ 
+            if (highlight) {
+              span.style.background = HIGHLIGHT_COLOR;
+              span.style.borderRadius = "5px";
+              span.style.padding = "1px 5px";
+            }
+ 
+            td.appendChild(span);
+            return td;
+          }
+ 
+          // "Called" column: blank for "No Call", otherwise the caller's name plus
+          // a green tick (result = 1) or dark red cross (result = 0) based on Entry!G
+          function calledCell(calledBy, result) {
+            var td = document.createElement("td");
+            td.style.textAlign = "center";
+            td.style.padding = "2px 4px";
+            td.style.borderBottom = "1px solid " + DIVIDER_COLOR;
+ 
+            var isNoCall = !calledBy || /^no\s*call$/i.test(calledBy.trim());
+            if (isNoCall) {
+              td.innerHTML = "&nbsp;";
+              return td;
+            }
+ 
+            var callerName = calledBy.trim();
+            var matchedPlayer = PLAYERS.filter(function (p) {
+              return p.name.toLowerCase() === callerName.toLowerCase();
+            })[0];
+ 
+            var nameSpan = document.createElement("span");
+            nameSpan.textContent = callerName;
+            nameSpan.style.color = matchedPlayer ? matchedPlayer.color : WHITE;
+            nameSpan.style.fontWeight = "700";
+            td.appendChild(nameSpan);
+ 
+            var resultTrimmed = (result || "").trim();
+            var isCorrect = resultTrimmed === "1";
+            var isIncorrect = resultTrimmed === "0";
+ 
+            if (isCorrect || isIncorrect) {
+              var symbolSpan = document.createElement("span");
+              symbolSpan.textContent = isCorrect ? " ✓" : " ✗";
+              symbolSpan.style.color = isCorrect ? CORRECT_COLOR : INCORRECT_COLOR;
+              symbolSpan.style.fontWeight = "800";
+              symbolSpan.style.marginLeft = "4px";
+              td.appendChild(symbolSpan);
+            }
+ 
+            return td;
+          }
+ 
+          function renderTable(scoresRows, entryRows) {
+            // Round 1 starts on row 3 (index 2) in both tabs, through row 403 (index 402)
+            var scoresDataRows = scoresRows.slice(2, 403);
+            var entryDataRows = entryRows.slice(2, 403);
+ 
+            var table = document.getElementById("scoreboard-table");
+            var thead = table.querySelector("thead");
+            var tbody = table.querySelector("tbody");
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+ 
+            var headTr = document.createElement("tr");
+            PLAYERS.forEach(function (player) {
+              headTr.appendChild(headerCell(player.name, player.color));
+            });
+            headTr.appendChild(headerCell("Called", WHITE));
+            thead.appendChild(headTr);
+ 
+            // Tracks, per player, whether the last actual (non-blank) value seen
+            // was itself a factor of 25 — so a run of consecutive factor-25 values
+            // only gets highlighted on the first one.
+            var prevWasFactor25 = PLAYERS.map(function () { return false; });
+ 
+            scoresDataRows.forEach(function (row, rowIndex) {
+              var cellValues = PLAYERS.map(function (player) {
+                var raw = row[player.col];
+                return (raw === undefined || raw.trim() === "") ? null : raw.trim();
+              });
+ 
+              var entryRow = entryDataRows[rowIndex] || [];
+              var calledBy = entryRow[ENTRY_CALLED_COL];
+              var callResult = entryRow[ENTRY_RESULT_COL];
+ 
+              // Ignore rows where every player's score is blank
+              var hasAnyValue = cellValues.some(function (v) { return v !== null; });
+              if (!hasAnyValue) return;
+ 
+              var tr = document.createElement("tr");
+              cellValues.forEach(function (raw, i) {
+                var highlight = false;
+ 
+                if (raw !== null) {
+                  var num = parseFloat(raw);
+                  var isFactorOf25 = !isNaN(num) && num !== 0 && num % 25 === 0;
+                  highlight = isFactorOf25 && !prevWasFactor25[i];
+                  prevWasFactor25[i] = isFactorOf25;
+                }
+                // Blank cells leave prevWasFactor25[i] untouched, so the streak
+                // carries through gaps in that player's data.
+ 
+                tr.appendChild(valueCell(raw, highlight));
+              });
+ 
+              tr.appendChild(calledCell(calledBy, callResult));
+              tbody.appendChild(tr);
+            });
+ 
+            // Remove the bottom border on the very last row
+            var lastRow = tbody.lastElementChild;
+            if (lastRow) {
+              Array.prototype.forEach.call(lastRow.children, function (td) {
+                td.style.borderBottom = "none";
+              });
+            }
+          }
+ 
+          function fetchCSV(url) {
+            var bustCacheUrl = url + "&_=" + Date.now();
+            return fetch(bustCacheUrl).then(function (res) {
+              if (!res.ok) {
+                throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+              }
+              return res.text();
+            }).then(parseCSV);
+          }
+ 
+          function loadData() {
+            showError("");
+            Promise.all([fetchCSV(SCORES_CSV_URL), fetchCSV(ENTRY_CSV_URL)])
+              .then(function (results) {
+                var scoresRows = results[0];
+                var entryRows = results[1];
+                if (!scoresRows.length) throw new Error("No data came back from the Scores sheet.");
+                renderTable(scoresRows, entryRows);
+              })
+              .catch(function (err) {
+                console.error("Scoreboard Table: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+ 
+          loadData();
+        })();
+        </script>
+      </div>
+  </section>
+
+  <!-- Section 7: The Scores (table), tan, very narrow -->
+  <section class="section bg-tan" id="scores">
+    <h2 class="section-title title-pink">The Scores</h2>
+      <div class="block block-very-narrow">
+        <div id="entry-scoreboard-wrap" style="background:#FDF0E6; border-radius:8px; padding:10px;">
+          <div id="entry-scoreboard-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; padding:4px 4px 10px;"></div>
+          <div style="max-height:420px; overflow-y:auto; border-radius:6px;">
+            <table id="entry-scoreboard-table" style="
+                width:100%;
+                border-collapse:collapse;
+                font-family:-apple-system, Helvetica, Arial, sans-serif;
+                font-size:12px;">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+ 
+        <script>
+        (function () {
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var ENTRY_CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent("Entry");
+ 
+          var BACKGROUND_COLOR = "#FDF0E6";
+          var BLACK = "#000000";
+          var CORRECT_COLOR = "#2e7d32";
+          var INCORRECT_COLOR = "#8b1a1a";
+          var DIVIDER_COLOR = "rgba(0,0,0,0.25)";
+ 
+          // Entry!A3:D403 -> columns A-D = indices 0-3
+          var PLAYERS = [
+            { name: "Adam",  col: 0, color: "#746CF0" },
+            { name: "Ewan",  col: 1, color: "#6CF0A6" },
+            { name: "Gerry", col: 2, color: "#F0DB6C" },
+            { name: "Jonny", col: 3, color: "#566070" }
+          ];
+ 
+          // Entry tab: column E (index 4) = who called it ("No Call" or a player name)
+          // column F (index 5) = 0/1 result formula, only meaningful when E isn't "No Call"
+          var ENTRY_CALLED_COL = 4;
+          var ENTRY_RESULT_COL = 5;
+ 
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+ 
+          function showError(msg) {
+            var el = document.getElementById("entry-scoreboard-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+ 
+          function headerCell(text, color) {
+            var th = document.createElement("th");
+            th.textContent = text;
+            th.style.textAlign = "center";
+            th.style.padding = "2px 4px 8px";
+            th.style.color = color;
+            th.style.fontFamily = "'Fraunces', serif";
+            th.style.fontWeight = "700";
+            th.style.fontSize = "15px";
+            th.style.borderBottom = "2px solid " + DIVIDER_COLOR;
+            th.style.position = "sticky";
+            th.style.top = "0";
+            th.style.background = BACKGROUND_COLOR;
+            return th;
+          }
+ 
+          function valueCell(raw) {
+            var td = document.createElement("td");
+            td.style.textAlign = "center";
+            td.style.padding = "2px 4px";
+            td.style.borderBottom = "1px solid " + DIVIDER_COLOR;
+ 
+            if (raw === null) {
+              td.innerHTML = "&nbsp;";
+              return td;
+            }
+ 
+            var span = document.createElement("span");
+            span.textContent = raw;
+            span.style.color = BLACK;
+            span.style.fontWeight = "500";
+ 
+            td.appendChild(span);
+            return td;
+          }
+ 
+          // "Called" column: blank for "No Call", otherwise the caller's name plus
+          // a green tick (result = 1) or dark red cross (result = 0) based on Entry!F
+          function calledCell(calledBy, result) {
+            var td = document.createElement("td");
+            td.style.textAlign = "center";
+            td.style.padding = "2px 4px";
+            td.style.borderBottom = "1px solid " + DIVIDER_COLOR;
+ 
+            var isNoCall = !calledBy || /^no\s*call$/i.test(calledBy.trim());
+            if (isNoCall) {
+              td.innerHTML = "&nbsp;";
+              return td;
+            }
+ 
+            var callerName = calledBy.trim();
+            var matchedPlayer = PLAYERS.filter(function (p) {
+              return p.name.toLowerCase() === callerName.toLowerCase();
+            })[0];
+ 
+            var nameSpan = document.createElement("span");
+            nameSpan.textContent = callerName;
+            nameSpan.style.color = matchedPlayer ? matchedPlayer.color : BLACK;
+            nameSpan.style.fontWeight = "700";
+            td.appendChild(nameSpan);
+ 
+            var resultTrimmed = (result || "").trim();
+            var isCorrect = resultTrimmed === "1";
+            var isIncorrect = resultTrimmed === "0";
+ 
+            if (isCorrect || isIncorrect) {
+              var symbolSpan = document.createElement("span");
+              symbolSpan.textContent = isCorrect ? " ✓" : " ✗";
+              symbolSpan.style.color = isCorrect ? CORRECT_COLOR : INCORRECT_COLOR;
+              symbolSpan.style.fontWeight = "800";
+              symbolSpan.style.marginLeft = "4px";
+              td.appendChild(symbolSpan);
+            }
+ 
+            return td;
+          }
+ 
+          function renderTable(entryRows) {
+            // Round 1 starts on row 3 (index 2), through row 403 (index 402)
+            var dataRows = entryRows.slice(2, 403);
+ 
+            var table = document.getElementById("entry-scoreboard-table");
+            var thead = table.querySelector("thead");
+            var tbody = table.querySelector("tbody");
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+ 
+            var headTr = document.createElement("tr");
+            PLAYERS.forEach(function (player) {
+              headTr.appendChild(headerCell(player.name, player.color));
+            });
+            headTr.appendChild(headerCell("Called", BLACK));
+            thead.appendChild(headTr);
+ 
+            dataRows.forEach(function (row) {
+              var cellValues = PLAYERS.map(function (player) {
+                var raw = row[player.col];
+                return (raw === undefined || raw.trim() === "") ? null : raw.trim();
+              });
+ 
+              var calledBy = row[ENTRY_CALLED_COL];
+              var callResult = row[ENTRY_RESULT_COL];
+ 
+              // Ignore rows where every player's score is blank
+              var hasAnyValue = cellValues.some(function (v) { return v !== null; });
+              if (!hasAnyValue) return;
+ 
+              var tr = document.createElement("tr");
+              cellValues.forEach(function (raw) {
+                tr.appendChild(valueCell(raw));
+              });
+ 
+              tr.appendChild(calledCell(calledBy, callResult));
+              tbody.appendChild(tr);
+            });
+ 
+            // Remove the bottom border on the very last row
+            var lastRow = tbody.lastElementChild;
+            if (lastRow) {
+              Array.prototype.forEach.call(lastRow.children, function (td) {
+                td.style.borderBottom = "none";
+              });
+            }
+          }
+ 
+          function loadData() {
+            showError("");
+            var bustCacheUrl = ENTRY_CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                renderTable(rows);
+              })
+              .catch(function (err) {
+                console.error("Entry Scoreboard: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+ 
+          loadData();
+        })();
+        </script>
+      </div>
+  </section>
+
+  <footer class="footer">
+    <div class="brand">Hands</div>
+  </footer>
+
+</body>
+</html>
