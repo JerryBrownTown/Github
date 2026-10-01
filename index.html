@@ -91,7 +91,7 @@
   </header>
 
   <!-- Current scores (pez chart), tan, wide -->
-  <section class="section bg-pink" id="current-scores" style="padding-top:1rem;">
+  <section class="section bg-pink" id="current-scores" style="padding-top:0;">
       <div class="block block-wide">
         <div id="pez-score-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; text-align:center; padding:4px 4px 12px;"></div>
         <div id="pez-score-row" style="
@@ -102,7 +102,7 @@
             gap:5rem;
             max-width:1200px;
             margin:0 auto;
-            padding:0.5rem 2rem 1rem;"></div>
+            padding:0 2rem 1rem;"></div>
 
         <script>
         (function () {
@@ -164,8 +164,9 @@
               .map(function (e) { return e.value; })
               .filter(function (v) { return v !== null; });
             var maxScore = validValues.length ? Math.max.apply(null, validValues) : 1;
+            var bars = [];
 
-            entries.forEach(function (entry) {
+            entries.forEach(function (entry, index) {
               var player = entry.player;
               var score = entry.value;
 
@@ -179,11 +180,15 @@
                 ? MIN_BAR_HEIGHT
                 : Math.max(MIN_BAR_HEIGHT, Math.round((score / maxScore) * MAX_BAR_HEIGHT));
 
+              // Starts at 0 and animates down to its full height on load/refresh,
+              // staggered slightly per player, matching the entrance animation the
+              // Chart.js bar charts elsewhere on the page use.
               var bar = document.createElement("div");
               bar.style.width = "52px";
-              bar.style.height = barHeight + "px";
+              bar.style.height = "0px";
               bar.style.background = player.color;
               bar.style.borderRadius = "0 0 16px 16px";
+              bar.style.transition = "height 0.8s cubic-bezier(.22,1,.36,1) " + (index * 0.1) + "s";
 
               var img = document.createElement("img");
               img.src = player.image;
@@ -206,6 +211,15 @@
               col.appendChild(img);
               col.appendChild(scoreText);
               row.appendChild(col);
+              bars.push({ el: bar, height: barHeight });
+            });
+
+            // Double rAF so the browser paints the 0px starting height first,
+            // otherwise the transition to full height wouldn't be seen.
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                bars.forEach(function (b) { b.el.style.height = b.height + "px"; });
+              });
             });
           }
 
