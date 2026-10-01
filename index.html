@@ -93,6 +93,21 @@
   <!-- Current scores (pez chart), tan, wide -->
   <section class="section bg-pink" id="current-scores" style="padding-top:0;">
       <div class="block block-wide">
+        <style>
+          /* Mobile only: shrink the row so all 4 bars stay on one line instead
+             of wrapping. Desktop sizing (set inline by the JS below) is untouched. */
+          @media (max-width: 768px) {
+            #pez-score-row {
+              flex-wrap: nowrap !important;
+              gap: 0.6rem !important;
+              padding: 0 0.5rem 1rem !important;
+            }
+            .pez-col  { width: 62px !important; }
+            .pez-bar  { width: 16px !important; }
+            .pez-img  { width: 58px !important; height: 58px !important; margin-top: -8px !important; }
+            .pez-score-text { font-size: 1.15rem !important; margin-top: 4px !important; }
+          }
+        </style>
         <div id="pez-score-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; text-align:center; padding:4px 4px 12px;"></div>
         <div id="pez-score-row" style="
             display:flex;
@@ -171,6 +186,7 @@
               var score = entry.value;
 
               var col = document.createElement("div");
+              col.className = "pez-col";
               col.style.display = "flex";
               col.style.flexDirection = "column";
               col.style.alignItems = "center";
@@ -184,6 +200,7 @@
               // staggered slightly per player, matching the entrance animation the
               // Chart.js bar charts elsewhere on the page use.
               var bar = document.createElement("div");
+              bar.className = "pez-bar";
               bar.style.width = "52px";
               bar.style.height = "0px";
               bar.style.background = player.color;
@@ -191,6 +208,7 @@
               bar.style.transition = "height 0.8s cubic-bezier(.22,1,.36,1) " + (index * 0.1) + "s";
 
               var img = document.createElement("img");
+              img.className = "pez-img";
               img.src = player.image;
               img.alt = player.name;
               img.style.width = "168px";
@@ -200,6 +218,7 @@
               img.style.display = "block";
 
               var scoreText = document.createElement("div");
+              scoreText.className = "pez-score-text";
               scoreText.textContent = score === null ? "–" : score;
               scoreText.style.fontFamily = "'Shrikhand', cursive";
               scoreText.style.fontWeight = "400";
