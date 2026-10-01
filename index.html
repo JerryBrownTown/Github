@@ -821,6 +821,154 @@
         })();
         </script>
       </div>
+      <div class="block block-wide">
+        <div id="pez-score-error" style="display:none; color:#5a1a12; font-weight:600; font-size:13px; text-align:center; padding:4px 4px 12px;"></div>
+        <div id="pez-score-row" style="
+            display:flex;
+            align-items:flex-start;
+            justify-content:center;
+            flex-wrap:wrap;
+            gap:2.5rem;
+            max-width:600px;
+            margin:0 auto;
+            padding:2rem 1rem 0.5rem;"></div>
+
+        <script>
+        (function () {
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Scores";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          var MAX_BAR_HEIGHT = 200; // px, tallest possible bar (highest current score)
+          var MIN_BAR_HEIGHT = 20;  // px, so a low/zero score still shows a visible stem
+
+          // Scores!A1:D1 -> row index 0, columns A-D = indices 0-3
+          var PLAYERS = [
+            { name: "Adam",  col: 0, color: "#746CF0", image: "images/adam.webp" },
+            { name: "Ewan",  col: 1, color: "#6CF0A6", image: "images/ewan.webp" },
+            { name: "Gerry", col: 2, color: "#F0DB6C", image: "images/gerry.webp" },
+            { name: "Jonny", col: 3, color: "#566070", image: "images/jonny.webp" }
+          ];
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("pez-score-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function renderColumns(entries) {
+            var row = document.getElementById("pez-score-row");
+            row.innerHTML = "";
+
+            var validValues = entries
+              .map(function (e) { return e.value; })
+              .filter(function (v) { return v !== null; });
+            var maxScore = validValues.length ? Math.max.apply(null, validValues) : 1;
+
+            entries.forEach(function (entry) {
+              var player = entry.player;
+              var score = entry.value;
+
+              var col = document.createElement("div");
+              col.style.display = "flex";
+              col.style.flexDirection = "column";
+              col.style.alignItems = "center";
+              col.style.width = "88px";
+
+              var barHeight = score === null
+                ? MIN_BAR_HEIGHT
+                : Math.max(MIN_BAR_HEIGHT, Math.round((score / maxScore) * MAX_BAR_HEIGHT));
+
+              var bar = document.createElement("div");
+              bar.style.width = "26px";
+              bar.style.height = barHeight + "px";
+              bar.style.background = player.color;
+              bar.style.borderRadius = "0 0 8px 8px";
+
+              var img = document.createElement("img");
+              img.src = player.image;
+              img.alt = player.name;
+              img.style.width = "84px";
+              img.style.height = "84px";
+              img.style.objectFit = "contain";
+              img.style.marginTop = "-10px";
+              img.style.display = "block";
+
+              var scoreText = document.createElement("div");
+              scoreText.textContent = score === null ? "–" : score;
+              scoreText.style.fontFamily = "'Shrikhand', cursive";
+              scoreText.style.fontWeight = "400";
+              scoreText.style.fontSize = "1.6rem";
+              scoreText.style.color = player.color;
+              scoreText.style.marginTop = "4px";
+
+              col.appendChild(bar);
+              col.appendChild(img);
+              col.appendChild(scoreText);
+              row.appendChild(col);
+            });
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                var dataRow = rows[0] || [];
+                var entries = PLAYERS.map(function (player) {
+                  var raw = dataRow[player.col];
+                  var val = (raw === undefined || raw.trim() === "") ? null : parseFloat(raw);
+                  return { player: player, value: isNaN(val) ? null : val };
+                });
+                renderColumns(entries);
+              })
+              .catch(function (err) {
+                console.error("Pez Score Chart: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+
+          loadData();
+        })();
+        </script>
+      </div>
   </section>
 
   <!-- Section 4: The Beers, tan, narrow -->
