@@ -138,6 +138,13 @@
     .cycling-toggle { margin-left: 0.75rem; border-color: #8C9199; }
     .cycling-toggle[aria-pressed="true"] { background: #8C9199; border-color: #8C9199; }
     .filter-btn[hidden] { display: none; }
+    .bio-filters { margin: 0 0 1.25rem; }
+    .bio-filters .filters { margin: 0 0 0.6rem; }
+    .swatch {
+      display: inline-block; width: 10px; height: 10px; margin-right: 0.45rem;
+      border-radius: 50%; vertical-align: 0;
+    }
+    .filter-btn[aria-pressed="true"] .swatch { box-shadow: 0 0 0 1.5px #ffffff; }
 
     .updated {
       margin: 0;
@@ -259,11 +266,13 @@
       </div>
 
       <div class="chart-block">
-        <div class="filters" role="group" aria-label="Show category">
-          <button class="filter-btn" type="button" data-filter="all" aria-pressed="true">All</button>
-          <button class="filter-btn" type="button" data-filter="HRV" aria-pressed="false">HRV</button>
-          <button class="filter-btn" type="button" data-filter="RHR" aria-pressed="false">RHR</button>
-          <button class="filter-btn" type="button" data-filter="Stress" aria-pressed="false">Stress</button>
+        <div class="bio-filters">
+          <div class="filters" role="group" aria-label="Categories" id="bio-cats">
+            <button class="filter-btn" type="button" data-cat="HRV" aria-pressed="true"><span class="swatch" style="background:#D64545"></span>HRV</button>
+            <button class="filter-btn" type="button" data-cat="RHR" aria-pressed="true"><span class="swatch" style="background:#2F6FD1"></span>RHR</button>
+            <button class="filter-btn" type="button" data-cat="Stress" aria-pressed="true"><span class="swatch" style="background:#E0A800"></span>Stress</button>
+          </div>
+          <div class="filters" role="group" aria-label="Years" id="bio-years"></div>
         </div>
         <div class="chart-box tall"><canvas id="chart-13"></canvas></div>
       </div>
@@ -349,7 +358,8 @@
 
     var charts = {};
     var lastLoad = 0;
-    var bioFilter = "all";
+    var bioCats  = { HRV: true, RHR: true, Stress: true }; // chart 13 category toggles
+    var bioYears = {};                                       // chart 13 year toggles (new years default on)
 
     /* ---------------- helpers ---------------- */
 
@@ -866,17 +876,13 @@
             borderWidth: y === latest ? 2.75 : 1.75,
             pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true,
             unit: b.unit,
-            hidden: bioFilter !== "all" && bioFilter !== b.key
+            year: y,
+            hidden: !isBioVisible(b.key, y)
           });
         });
       });
 
-      var options = baseOptions("", { legend: true });
-      options.plugins.legend.labels.pointStyle = "line";
-      options.plugins.legend.labels.filter = function (item, chartData) {
-        var ds = chartData.datasets[item.datasetIndex];
-        return bioFilter === "all" || ds.category === bioFilter;
-      };
+      var options = baseOptions("", { legend: false });
       options.interaction = { mode: "index", intersect: false };
       options.plugins.tooltip.filter = function (item) { return item.parsed.y !== null; };
       options.plugins.tooltip.callbacks.label = function (ctx) {
@@ -890,7 +896,37 @@
         delete charts["chart-13"];
       }
       upsert("chart-13", "line", { labels: labels, titles: titles, datasets: datasets }, options);
+      renderYearButtons(years);
       applyBioFilter();
+    }
+
+    function isBioVisible(cat, year) {
+      return !!bioCats[cat] && bioYears[year] !== false;
+    }
+
+    // Year buttons: built from the years in the data. The swatch uses the same
+    // light-to-dark step as the lines (older = lighter, newer = darker).
+    function renderYearButtons(years) {
+      var wrap = document.getElementById("bio-years");
+      var existing = Array.prototype.map.call(wrap.children, function (b) { return b.getAttribute("data-year"); }).join();
+      if (existing === years.join()) return;
+      wrap.innerHTML = "";
+      years.forEach(function (y, i) {
+        if (bioYears[y] === undefined) bioYears[y] = true;
+        var t = years.length > 1 ? 0.45 - (0.7 * i) / (years.length - 1) : 0;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "filter-btn";
+        btn.setAttribute("data-year", y);
+        btn.setAttribute("aria-pressed", bioYears[y] ? "true" : "false");
+        btn.innerHTML = '<span class="swatch" style="background:' + shade(DARK_GREY, t) + '"></span>' + y;
+        btn.addEventListener("click", function () {
+          bioYears[y] = !bioYears[y];
+          btn.setAttribute("aria-pressed", bioYears[y] ? "true" : "false");
+          applyBioFilter();
+        });
+        wrap.appendChild(btn);
+      });
     }
 
     function applyBioFilter() {
@@ -898,21 +934,20 @@
       if (!c) return;
       var visible = [];
       c.data.datasets.forEach(function (ds, i) {
-        var show = bioFilter === "all" || ds.category === bioFilter;
+        var show = isBioVisible(ds.category, ds.year);
         c.setDatasetVisibility(i, show);
         if (show) visible.push(ds);
       });
-      // Rescale the y axis to the category being shown
+      // Rescale the y axis to the lines being shown
       c.options.scales.y.max = dataMax({ labels: c.data.labels, datasets: visible }, false);
       c.update();
     }
 
-    document.querySelectorAll(".filter-btn[data-filter]").forEach(function (btn) {
+    document.querySelectorAll("#bio-cats .filter-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        bioFilter = btn.getAttribute("data-filter");
-        document.querySelectorAll(".filter-btn[data-filter]").forEach(function (b) {
-          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
-        });
+        var cat = btn.getAttribute("data-cat");
+        bioCats[cat] = !bioCats[cat];
+        btn.setAttribute("aria-pressed", bioCats[cat] ? "true" : "false");
         applyBioFilter();
       });
     });
