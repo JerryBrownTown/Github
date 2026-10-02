@@ -186,8 +186,8 @@
       <div class="chart-error" data-sheet="Monthly"></div>
 
       <div class="chart-block">
-        <h2 class="big-title with-sub" id="totals-title">Total activities per month</h2>
-        <p class="chart-sub" id="totals-sub">ex. cycling</p>
+        <h2 class="big-title with-sub" id="totals-title">Exercise</h2>
+        <p class="chart-sub" id="totals-sub">per month</p>
         <div class="filters" role="group" aria-label="Show" data-group="totals">
           <button class="filter-btn" type="button" data-view="quantity" aria-pressed="true">Quantity</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
@@ -201,7 +201,8 @@
   <!-- Running, light grey -->
   <section class="section bg-light-grey" id="running">
     <div class="inner">
-      <h2 class="big-title">Running</h2>
+      <h2 class="big-title with-sub">Running</h2>
+      <p class="chart-sub">per month</p>
       <div class="chart-error" data-sheet="Monthly"></div>
       <div class="chart-block">
         <div class="filters" role="group" aria-label="Show" data-group="running">
@@ -217,7 +218,8 @@
   <!-- Swimming, white grey -->
   <section class="section bg-white-grey" id="swimming">
     <div class="inner">
-      <h2 class="big-title">Swimming</h2>
+      <h2 class="big-title with-sub">Swimming</h2>
+      <p class="chart-sub">per month</p>
       <div class="chart-error" data-sheet="Monthly"></div>
       <div class="chart-block">
         <div class="filters" role="group" aria-label="Show" data-group="swimming">
@@ -233,7 +235,8 @@
   <!-- Workouts, light grey -->
   <section class="section bg-light-grey" id="workouts">
     <div class="inner">
-      <h2 class="big-title">Workouts</h2>
+      <h2 class="big-title with-sub">Workouts</h2>
+      <p class="chart-sub">per month</p>
       <div class="chart-error" data-sheet="Monthly"></div>
       <div class="chart-block">
         <div class="filters" role="group" aria-label="Show" data-group="workouts">
@@ -678,8 +681,6 @@
         toggle.hidden = !v.cyclingToggle;
         toggle.setAttribute("aria-pressed", withCycling ? "true" : "false");
         toggle.textContent = showCycling ? "Hide cycling" : "Show cycling";
-        document.getElementById("totals-title").textContent = v.title;
-        document.getElementById("totals-sub").textContent = withCycling ? "inc. cycling" : "ex. cycling";
       }
 
       if (!monthsData) return;
