@@ -33,7 +33,37 @@
       min-height: 5rem;
       padding: 1rem 2rem;
     }
-    .topbar { background: var(--tan); }
+    .topbar { background: var(--tan); justify-content: space-between; position: relative; z-index: 20; }
+
+    /* Burger menu (page switcher) */
+    .site-menu { position: relative; }
+    .menu-toggle {
+      display: flex; flex-direction: column; justify-content: center; gap: 6px;
+      width: 48px; height: 48px; padding: 10px;
+      background: transparent; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .menu-toggle span {
+      display: block; height: 4px; border-radius: 2px; background: var(--pink);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(10px) rotate(45deg); }
+    .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-10px) rotate(-45deg); }
+    .menu-toggle:focus-visible, .menu-panel a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+    .menu-panel {
+      position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;
+      margin: 0; padding: 8px; list-style: none;
+      background: var(--blue); border-radius: 8px; box-shadow: 0 8px 24px rgba(11,13,99,0.3);
+    }
+    .menu-panel[hidden] { display: none; }
+    .menu-panel a {
+      display: block; padding: 10px 14px; border-radius: 6px;
+      font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.15rem;
+      color: #ffffff; text-decoration: none;
+    }
+    .menu-panel a:hover { background: rgba(255,255,255,0.1); }
+    .menu-panel a[aria-current="page"] { color: var(--pink); }
+    @media (prefers-reduced-motion: reduce) { .menu-toggle span { transition: none; } }
     .footer { background: var(--blue); }
 
     .brand {
@@ -88,7 +118,38 @@
 
   <header class="topbar">
     <h1 class="brand">Hands</h1>
+    <nav class="site-menu" aria-label="Pages">
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu-panel" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="menu-panel" id="site-menu-panel" hidden>
+        <li><a href="/" aria-current="page">Hands</a></li>
+        <li><a href="/fitness">Fitness</a></li>
+      </ul>
+    </nav>
   </header>
+
+  <script>
+  (function () {
+    var btn = document.querySelector(".menu-toggle");
+    var panel = document.getElementById("site-menu-panel");
+    function setOpen(open) {
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      panel.hidden = !open;
+    }
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(panel.hidden);
+    });
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !panel.hidden) { setOpen(false); btn.focus(); }
+    });
+  })();
+  </script>
 
   <!-- Current scores (pez chart), tan, wide -->
   <section class="section bg-pink" id="current-scores" style="padding-top:0;">
