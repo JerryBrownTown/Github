@@ -195,6 +195,10 @@
       <div class="chart-block">
         <h2 class="big-title with-sub">Total exercises per month</h2>
         <p class="chart-sub">inc. cycling</p>
+        <div class="filters" role="group" aria-label="Show" data-group="cycling">
+          <button class="filter-btn" type="button" data-view="all" aria-pressed="true">All</button>
+          <button class="filter-btn" type="button" data-view="cycling" aria-pressed="false">Cycling</button>
+        </div>
         <div class="chart-box"><canvas id="chart-3"></canvas></div>
       </div>
     </div>
@@ -625,6 +629,14 @@
                       sets: [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"]] }
         }
       },
+      cycling: {
+        canvas: "chart-3", stacked: true, legend: true, current: "all",
+        views: {
+          all:     { y: "hours", unit: "h",
+                     sets: [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"], ["Cycling", "J", "cycle"]] },
+          cycling: { y: "hours", unit: "h", sets: [["Cycling", "J", "cycle"]] }
+        }
+      },
       running: {
         canvas: "chart-running", current: "runs",
         views: {
@@ -681,11 +693,6 @@
       if (!months.length) throw new Error("any months from the Monthly tab. Check the Monthly gid points at the right tab and that column A from row 2 holds the months.");
       monthsData = months;
       Object.keys(VIEWS).forEach(renderView);
-
-      // Hours inc. cycling, stacked (no switch)
-      upsert("chart-3", "bar", monthlyData(months,
-        [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"], ["Cycling", "J", "cycle"]], true, "h"),
-        baseOptions("hours", { stacked: true, legend: true }));
     }
 
     document.querySelectorAll(".filters[data-group]").forEach(function (groupEl) {
