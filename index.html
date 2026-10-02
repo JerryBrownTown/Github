@@ -1920,6 +1920,288 @@
       </div>
   </section>
 
+  <!-- Section 8: Without Modifiers, blue, wide -->
+  <section class="section bg-blue" id="without-modifiers">
+    <h2 class="section-title title-pink">Without Modifiers</h2>
+      <div class="block block-wide">
+        <div id="nomod-scoreboard-wrap" style="position:relative; max-width:100%; background:#0B0D63; border-radius:8px; padding:16px 16px 8px;">
+          <button id="nomod-refresh-btn" title="Refresh data" style="
+              position:absolute; top:12px; left:12px; z-index:10;
+              background:#ffffff; border:none; border-radius:6px;
+              width:34px; height:34px; cursor:pointer; font-size:16px;
+              box-shadow:0 1px 3px rgba(0,0,0,0.25); line-height:1;">⟳</button>
+          <div id="nomod-scoreboard-error" style="display:none; color:#ffb4a8; font-weight:600; font-size:13px; padding:4px 4px 8px;"></div>
+          <div id="nomod-legend" style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:4px 20px;
+              justify-content:center;
+              padding:4px 8px 2px;
+              max-width:220px;
+              margin:0 auto;"></div>
+          <div style="width:100%; height:420px;">
+            <canvas id="nomod-scoreboard-canvas"></canvas>
+          </div>
+        </div>
+
+        <script>
+        (function () {
+          var CHART_JS_URLS = [
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js",
+            "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+          ];
+
+          var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+          var SHEET_NAME = "Data";
+          var CSV_URL = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+            "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(SHEET_NAME);
+
+          // Data!AR3:AU200 -> columns AR-AU = indices 43-46
+          var PLAYERS = [
+            { name: "Adam",  col: 43, color: "#746CF0" },
+            { name: "Ewan",  col: 44, color: "#6CF0A6" },
+            { name: "Gerry", col: 45, color: "#F0DB6C" },
+            { name: "Jonny", col: 46, color: "#566070" }
+          ];
+
+          var BACKGROUND_COLOR = "#0B0D63";
+          var chart = null;
+
+          // Minimal CSV line parser (handles quoted fields containing commas)
+          function parseCSV(text) {
+            var rows = [];
+            var lines = text.split(/\r\n|\n|\r/);
+            for (var i = 0; i < lines.length; i++) {
+              var line = lines[i];
+              if (line === "") continue;
+              var row = [];
+              var field = "";
+              var inQuotes = false;
+              for (var j = 0; j < line.length; j++) {
+                var ch = line[j];
+                if (inQuotes) {
+                  if (ch === '"' && line[j + 1] === '"') { field += '"'; j++; }
+                  else if (ch === '"') { inQuotes = false; }
+                  else { field += ch; }
+                } else {
+                  if (ch === '"') inQuotes = true;
+                  else if (ch === ',') { row.push(field); field = ""; }
+                  else { field += ch; }
+                }
+              }
+              row.push(field);
+              rows.push(row);
+            }
+            return rows;
+          }
+
+          function buildDatasets(rows) {
+            // Data!AR3:AU200 starts row 3, so skip the first two CSV rows, and ends row 200.
+            var dataRows = rows.slice(2, 200);
+
+            return PLAYERS.map(function (player) {
+              var points = [];
+              var latest = null;
+
+              dataRows.forEach(function (row, i) {
+                var raw = row[player.col];
+                if (raw === undefined) return;
+                raw = raw.trim();
+                if (raw === "") return; // ignore empty rows for this player
+
+                var val = parseFloat(raw);
+                if (isNaN(val)) return;
+
+                points.push({ x: i + 1, y: val });
+                latest = val;
+              });
+
+              return {
+                label: player.name,
+                data: points,
+                borderColor: player.color,
+                backgroundColor: player.color,
+                pointBackgroundColor: player.color,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderWidth: 2.5,
+                tension: 0.15,
+                latestScore: latest
+              };
+            });
+          }
+
+          // Plugin: fills the whole canvas with the chart background colour
+          var backgroundPlugin = {
+            id: "nomodBackground",
+            beforeDraw: function (c) {
+              var ctx = c.ctx;
+              ctx.save();
+              ctx.fillStyle = BACKGROUND_COLOR;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.restore();
+            }
+          };
+
+          // Plugin: draws each player's latest score to the right of their line's last point
+          var latestScorePlugin = {
+            id: "nomodLatestScore",
+            afterDatasetsDraw: function (c) {
+              var ctx = c.ctx;
+              c.data.datasets.forEach(function (ds, i) {
+                var meta = c.getDatasetMeta(i);
+                if (!meta.data.length || ds.latestScore === null) return;
+                var lastPoint = meta.data[meta.data.length - 1];
+
+                ctx.save();
+                ctx.fillStyle = ds.borderColor;
+                ctx.font = "700 18px 'Fraunces', serif";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(ds.latestScore, lastPoint.x + 8, lastPoint.y);
+                ctx.restore();
+              });
+            }
+          };
+
+          function renderLegend() {
+            var el = document.getElementById("nomod-legend");
+            el.innerHTML = "";
+            PLAYERS.forEach(function (player) {
+              var item = document.createElement("div");
+              item.style.display = "flex";
+              item.style.alignItems = "center";
+              item.style.gap = "6px";
+
+              var swatch = document.createElement("span");
+              swatch.style.display = "inline-block";
+              swatch.style.width = "16px";
+              swatch.style.height = "3px";
+              swatch.style.borderRadius = "2px";
+              swatch.style.backgroundColor = player.color;
+
+              var label = document.createElement("span");
+              label.textContent = player.name;
+              label.style.color = "#ffffff";
+              label.style.fontFamily = "'Fraunces', serif";
+              label.style.fontWeight = "700";
+              label.style.fontSize = "12px";
+
+              item.appendChild(swatch);
+              item.appendChild(label);
+              el.appendChild(item);
+            });
+          }
+
+          function renderChart(datasets) {
+            var ctx = document.getElementById("nomod-scoreboard-canvas").getContext("2d");
+
+            if (chart) {
+              chart.data.datasets = datasets;
+              chart.update();
+              return;
+            }
+
+            chart = new Chart(ctx, {
+              type: "line",
+              data: { datasets: datasets },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 56, top: 8, bottom: 8 } },
+                interaction: { intersect: false, mode: "nearest" },
+                scales: {
+                  x: {
+                    type: "linear",
+                    display: true,
+                    grid: { display: false, drawTicks: false },
+                    ticks: { display: false },
+                    title: { display: false }
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 50,
+                      color: "#ffffff",
+                      font: { weight: "600" }
+                    },
+                    grid: { color: "rgba(255,255,255,0.2)" }
+                  }
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      title: function () { return ""; }
+                    }
+                  }
+                }
+              },
+              plugins: [backgroundPlugin, latestScorePlugin]
+            });
+          }
+
+          function showError(msg) {
+            var el = document.getElementById("nomod-scoreboard-error");
+            el.textContent = msg;
+            el.style.display = msg ? "block" : "none";
+          }
+
+          function loadData() {
+            showError("");
+            var bustCacheUrl = CSV_URL + "&_=" + Date.now();
+            fetch(bustCacheUrl)
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error("Sheet request failed with status " + res.status + ". Check the sheet is shared as \"Anyone with the link – Viewer\".");
+                }
+                return res.text();
+              })
+              .then(function (text) {
+                var rows = parseCSV(text);
+                if (!rows.length) throw new Error("No data came back from the sheet.");
+                var datasets = buildDatasets(rows);
+                renderChart(datasets);
+              })
+              .catch(function (err) {
+                console.error("No Modifiers Scoreboard: failed to load sheet data", err);
+                showError("Couldn't load scores: " + err.message);
+              });
+          }
+
+          document.getElementById("nomod-refresh-btn").addEventListener("click", loadData);
+
+          renderLegend();
+
+          function init() {
+            loadData();
+          }
+
+          // Load Chart.js ourselves and only start once it has actually finished loading,
+          // rather than relying on <script> tag order. Tries a couple of CDN mirrors
+          // in case one is blocked by an extension/network filter.
+          function loadChartJs(urls, index) {
+            if (index >= urls.length) {
+              showError("Couldn't load the charting library from any source (likely an ad-blocker or network filter blocking script CDNs).");
+              return;
+            }
+            var s = document.createElement("script");
+            s.src = urls[index];
+            s.onload = init;
+            s.onerror = function () { loadChartJs(urls, index + 1); };
+            document.head.appendChild(s);
+          }
+
+          if (window.Chart) {
+            init();
+          } else {
+            loadChartJs(CHART_JS_URLS, 0);
+          }
+        })();
+        </script>
+      </div>
+  </section>
+
   <footer class="footer">
     <div class="brand">Hands</div>
   </footer>
