@@ -87,7 +87,7 @@
     .big-title {
       margin: 0 0 2.5rem;
       font-weight: 800;
-      font-size: 4rem;
+      font-size: 2.8rem;
       line-height: 1.1;
       letter-spacing: -0.02em;
       text-align: center;
@@ -96,15 +96,7 @@
 
     .chart-block + .chart-block { margin-top: 3.5rem; }
 
-    .chart-title {
-      margin: 0;
-      font-weight: 700;
-      font-size: 2.8rem;
-      line-height: 1.15;
-      letter-spacing: -0.01em;
-      text-align: center;
-      color: var(--dark-blue);
-    }
+    .big-title.with-sub { margin-bottom: 0; }
     .chart-sub {
       margin: 0.35rem 0 1.25rem;
       font-weight: 600;
@@ -156,8 +148,8 @@
     @media (max-width: 768px) {
       .topbar, .footer { padding: 0.75rem 1rem; }
       .section { padding: 2.5rem 1rem; }
-      .big-title { font-size: 2.6rem; margin-bottom: 1.5rem; }
-      .chart-title { font-size: 1.9rem; }
+      .big-title { font-size: 1.85rem; margin-bottom: 1.5rem; }
+      .big-title.with-sub { margin-bottom: 0; }
       .chart-box { height: 320px; }
       .chart-box.short { height: 240px; }
       .chart-box.tall { height: 380px; }
@@ -191,19 +183,19 @@
       <div class="chart-error" data-sheet="Monthly"></div>
 
       <div class="chart-block">
-        <h2 class="chart-title">Total activities per month</h2>
+        <h2 class="big-title with-sub">Total activities per month</h2>
         <p class="chart-sub">ex. cycling</p>
         <div class="chart-box"><canvas id="chart-1"></canvas></div>
       </div>
 
       <div class="chart-block">
-        <h2 class="chart-title">Total exercises per month</h2>
+        <h2 class="big-title with-sub">Total exercises per month</h2>
         <p class="chart-sub">ex. cycling</p>
         <div class="chart-box"><canvas id="chart-2"></canvas></div>
       </div>
 
       <div class="chart-block">
-        <h2 class="chart-title">Total exercises per month</h2>
+        <h2 class="big-title with-sub">Total exercises per month</h2>
         <p class="chart-sub">inc. cycling</p>
         <div class="chart-box"><canvas id="chart-3"></canvas></div>
       </div>
@@ -294,13 +286,16 @@
   (function () {
     /* ------------------------------------------------------------------
        DATA SOURCE
-       The sheet's "Publish to web" link. Each tab is requested by name.
-       If a tab ever comes back wrong, put that tab's gid (the number after
-       "gid=" in the sheet URL when that tab is open) into GIDS below and it
-       will be used instead of the name.
+       Google's published link only returns the FIRST tab unless you ask
+       for a tab by its gid. To find a gid: open the sheet, click the tab,
+       and copy the number after "gid=" at the end of the browser address
+       (e.g. ...edit#gid=123456789 -> "123456789").
        ------------------------------------------------------------------ */
     var PUB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8jr6FAFcoQxcHHNBgmZ1fruqkAWumO9wev3IEFvRFCUzOVj7rKNOYGF-GtEvur7ItS6Mc4YiClPN-/pub";
-    var GIDS = { Monthly: "", Record: "" };
+    var GIDS = {
+      Monthly: "539622156",
+      Record:  "0"
+    };
 
     // Monthly!A2:J73
     var MONTHLY_FIRST_ROW = 2;
@@ -437,11 +432,13 @@
     }
 
     function sheetURL(name) {
-      var q = GIDS[name] ? "gid=" + GIDS[name] + "&single=true" : "sheet=" + encodeURIComponent(name);
-      return PUB_URL + "?" + q + "&output=csv&_=" + Date.now();
+      return PUB_URL + "?gid=" + encodeURIComponent(GIDS[name]) + "&single=true&output=csv&_=" + Date.now();
     }
 
     function fetchSheet(name) {
+      if (!/^\d+$/.test(String(GIDS[name]).trim())) {
+        return Promise.reject(new Error("the " + name + " tab: its gid hasn't been set yet. Add it to GIDS in the page's script."));
+      }
       return fetch(sheetURL(name), { cache: "no-store" })
         .then(function (res) {
           if (!res.ok) throw new Error("the " + name + " tab returned status " + res.status + ". Check the sheet is still published to the web.");
@@ -479,7 +476,8 @@
           },
           y: {
             stacked: !!opts.stacked,
-            beginAtZero: opts.beginAtZero !== false,
+            min: 0,
+            beginAtZero: true,
             grid: { color: GRID },
             border: { display: false },
             ticks: { color: DARK_GREY, font: { family: "'Open Sans', sans-serif", size: 12 } },
@@ -525,8 +523,34 @@
       };
     }
 
+    // Round up to a tidy number just above the data's maximum
+    function niceMax(v) {
+      if (!v || v <= 0) return 1;
+      var p = Math.pow(10, Math.floor(Math.log10(v)));
+      var steps = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+      for (var i = 0; i < steps.length; i++) if (steps[i] * p >= v) return steps[i] * p;
+      return 10 * p;
+    }
+
+    function dataMax(data, stacked) {
+      var max = 0;
+      var len = data.labels.length;
+      for (var i = 0; i < len; i++) {
+        var total = 0;
+        data.datasets.forEach(function (ds) {
+          var v = ds.data[i];
+          if (v === null || v === undefined || isNaN(v)) return;
+          if (stacked) total += Math.max(0, v); else if (v > total) total = v;
+        });
+        if (total > max) max = total;
+      }
+      return niceMax(max);
+    }
+
     // Create a chart once, then update its data in place on later refreshes
     function upsert(id, type, data, options) {
+      var stacked = !!(options.scales.y && options.scales.y.stacked);
+      options.scales.y.max = dataMax(data, stacked);
       if (charts[id]) {
         charts[id].data.labels = data.labels;
         charts[id].data.titles = data.titles;
@@ -535,6 +559,7 @@
           else charts[id].data.datasets.push(ds);
         });
         charts[id].data.datasets.length = data.datasets.length;
+        charts[id].options.scales.y.max = options.scales.y.max;
         charts[id].update("none");
         return charts[id];
       }
@@ -582,6 +607,7 @@
     }
 
     function renderMonthly(months) {
+      if (!months.length) throw new Error("any months from the Monthly tab. Check the Monthly gid points at the right tab and that column A from row 2 holds the months.");
       var labels = months.map(function (m) { return m.tick; });
       var titles = months.map(function (m) { return m.title; });
       var data = function (sets) { return { labels: labels, titles: titles, datasets: sets }; };
@@ -688,7 +714,7 @@
         };
       });
 
-      var options = baseOptions("", { legend: true, beginAtZero: false });
+      var options = baseOptions("", { legend: true });
       options.plugins.legend.labels.pointStyle = "line";
       options.scales.x.ticks.maxTicksLimit = 12;
       options.plugins.tooltip.callbacks.label = function (ctx) {
@@ -748,7 +774,7 @@
         });
       });
 
-      var options = baseOptions("", { legend: true, beginAtZero: false });
+      var options = baseOptions("", { legend: true });
       options.plugins.legend.labels.pointStyle = "line";
       options.plugins.legend.labels.filter = function (item, chartData) {
         var ds = chartData.datasets[item.datasetIndex];
@@ -773,9 +799,14 @@
     function applyBioFilter() {
       var c = charts["chart-13"];
       if (!c) return;
+      var visible = [];
       c.data.datasets.forEach(function (ds, i) {
-        c.setDatasetVisibility(i, bioFilter === "all" || ds.category === bioFilter);
+        var show = bioFilter === "all" || ds.category === bioFilter;
+        c.setDatasetVisibility(i, show);
+        if (show) visible.push(ds);
       });
+      // Rescale the y axis to the category being shown
+      c.options.scales.y.max = dataMax({ labels: c.data.labels, datasets: visible }, false);
       c.update();
     }
 
@@ -801,6 +832,7 @@
         .then(function (rows) {
           showError("Record", "");
           var days = buildDays(rows);
+          if (!days.length) throw new Error("any days from the Record tab. Check the Record gid points at the right tab and that column B from row 367 holds dates.");
           renderWeekly(days);
           renderYearOverlay(days);
         })
