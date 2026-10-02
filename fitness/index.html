@@ -135,6 +135,9 @@
       cursor: pointer;
     }
     .filter-btn[aria-pressed="true"] { background: var(--dark-grey); color: #ffffff; }
+    .cycling-toggle { margin-left: 0.75rem; border-color: #8C9199; }
+    .cycling-toggle[aria-pressed="true"] { background: #8C9199; border-color: #8C9199; }
+    .filter-btn[hidden] { display: none; }
 
     .updated {
       margin: 0;
@@ -184,22 +187,13 @@
 
       <div class="chart-block">
         <h2 class="big-title with-sub" id="totals-title">Total activities per month</h2>
-        <p class="chart-sub">ex. cycling</p>
+        <p class="chart-sub" id="totals-sub">ex. cycling</p>
         <div class="filters" role="group" aria-label="Show" data-group="totals">
           <button class="filter-btn" type="button" data-view="quantity" aria-pressed="true">Quantity</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+          <button class="filter-btn cycling-toggle" type="button" id="cycling-toggle" aria-pressed="false" hidden>Show cycling</button>
         </div>
         <div class="chart-box"><canvas id="chart-totals"></canvas></div>
-      </div>
-
-      <div class="chart-block">
-        <h2 class="big-title with-sub">Total exercises per month</h2>
-        <p class="chart-sub">inc. cycling</p>
-        <div class="filters" role="group" aria-label="Show" data-group="cycling">
-          <button class="filter-btn" type="button" data-view="all" aria-pressed="true">All</button>
-          <button class="filter-btn" type="button" data-view="cycling" aria-pressed="false">Cycling</button>
-        </div>
-        <div class="chart-box"><canvas id="chart-3"></canvas></div>
       </div>
     </div>
   </section>
@@ -625,16 +619,8 @@
         views: {
           quantity: { y: "quantity", title: "Total activities per month",
                       sets: [["Runs", "B", "run"], ["Swims", "C", "swim"], ["Workouts", "D", "workout"]] },
-          hours:    { y: "hours", unit: "h", title: "Total exercises per month",
+          hours:    { y: "hours", unit: "h", title: "Total exercises per month", cyclingToggle: true,
                       sets: [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"]] }
-        }
-      },
-      cycling: {
-        canvas: "chart-3", stacked: true, legend: true, current: "all",
-        views: {
-          all:     { y: "hours", unit: "h",
-                     sets: [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"], ["Cycling", "J", "cycle"]] },
-          cycling: { y: "hours", unit: "h", sets: [["Cycling", "J", "cycle"]] }
         }
       },
       running: {
@@ -681,13 +667,31 @@
       };
     }
 
+    var showCycling = false; // Hours view only: cycling (column J) on top of the stack
+
     function renderView(group) {
-      if (!monthsData) return;
       var g = VIEWS[group], v = g.views[g.current];
-      upsert(g.canvas, "bar", monthlyData(monthsData, v.sets, g.stacked, v.unit),
+      var withCycling = !!v.cyclingToggle && showCycling;
+
+      if (group === "totals") {
+        var toggle = document.getElementById("cycling-toggle");
+        toggle.hidden = !v.cyclingToggle;
+        toggle.setAttribute("aria-pressed", withCycling ? "true" : "false");
+        toggle.textContent = showCycling ? "Hide cycling" : "Show cycling";
+        document.getElementById("totals-title").textContent = v.title;
+        document.getElementById("totals-sub").textContent = withCycling ? "inc. cycling" : "ex. cycling";
+      }
+
+      if (!monthsData) return;
+      var sets = withCycling ? v.sets.concat([["Cycling", "J", "cycle"]]) : v.sets;
+      upsert(g.canvas, "bar", monthlyData(monthsData, sets, g.stacked, v.unit),
              baseOptions(v.y, { stacked: g.stacked, legend: g.legend }));
-      if (v.title) document.getElementById("totals-title").textContent = v.title;
     }
+
+    document.getElementById("cycling-toggle").addEventListener("click", function () {
+      showCycling = !showCycling;
+      renderView("totals");
+    });
 
     function renderMonthly(months) {
       if (!months.length) throw new Error("any months from the Monthly tab. Check the Monthly gid points at the right tab and that column A from row 2 holds the months.");
@@ -697,10 +701,10 @@
 
     document.querySelectorAll(".filters[data-group]").forEach(function (groupEl) {
       var group = groupEl.getAttribute("data-group");
-      groupEl.querySelectorAll(".filter-btn").forEach(function (btn) {
+      groupEl.querySelectorAll(".filter-btn[data-view]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           VIEWS[group].current = btn.getAttribute("data-view");
-          groupEl.querySelectorAll(".filter-btn").forEach(function (b) {
+          groupEl.querySelectorAll(".filter-btn[data-view]").forEach(function (b) {
             b.setAttribute("aria-pressed", b === btn ? "true" : "false");
           });
           renderView(group);
