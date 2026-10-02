@@ -177,21 +177,19 @@
     </nav>
   </header>
 
-  <!-- Charts 1–3: totals, white grey -->
+  <!-- Totals, white grey -->
   <section class="section bg-white-grey" id="totals">
     <div class="inner">
       <div class="chart-error" data-sheet="Monthly"></div>
 
       <div class="chart-block">
-        <h2 class="big-title with-sub">Total activities per month</h2>
+        <h2 class="big-title with-sub" id="totals-title">Total activities per month</h2>
         <p class="chart-sub">ex. cycling</p>
-        <div class="chart-box"><canvas id="chart-1"></canvas></div>
-      </div>
-
-      <div class="chart-block">
-        <h2 class="big-title with-sub">Total exercises per month</h2>
-        <p class="chart-sub">ex. cycling</p>
-        <div class="chart-box"><canvas id="chart-2"></canvas></div>
+        <div class="filters" role="group" aria-label="Show" data-group="totals">
+          <button class="filter-btn" type="button" data-view="quantity" aria-pressed="true">Quantity</button>
+          <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+        </div>
+        <div class="chart-box"><canvas id="chart-totals"></canvas></div>
       </div>
 
       <div class="chart-block">
@@ -202,35 +200,50 @@
     </div>
   </section>
 
-  <!-- Charts 4–6: Running, light grey -->
+  <!-- Running, light grey -->
   <section class="section bg-light-grey" id="running">
     <div class="inner">
       <h2 class="big-title">Running</h2>
       <div class="chart-error" data-sheet="Monthly"></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-4"></canvas></div></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-5"></canvas></div></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-6"></canvas></div></div>
+      <div class="chart-block">
+        <div class="filters" role="group" aria-label="Show" data-group="running">
+          <button class="filter-btn" type="button" data-view="runs" aria-pressed="true">Runs</button>
+          <button class="filter-btn" type="button" data-view="distance" aria-pressed="false">Distance</button>
+          <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+        </div>
+        <div class="chart-box"><canvas id="chart-running"></canvas></div>
+      </div>
     </div>
   </section>
 
-  <!-- Charts 7–9: Swimming, white grey -->
+  <!-- Swimming, white grey -->
   <section class="section bg-white-grey" id="swimming">
     <div class="inner">
       <h2 class="big-title">Swimming</h2>
       <div class="chart-error" data-sheet="Monthly"></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-7"></canvas></div></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-8"></canvas></div></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-9"></canvas></div></div>
+      <div class="chart-block">
+        <div class="filters" role="group" aria-label="Show" data-group="swimming">
+          <button class="filter-btn" type="button" data-view="swims" aria-pressed="true">Swims</button>
+          <button class="filter-btn" type="button" data-view="distance" aria-pressed="false">Distance</button>
+          <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+        </div>
+        <div class="chart-box"><canvas id="chart-swimming"></canvas></div>
+      </div>
     </div>
   </section>
 
-  <!-- Charts 10–11: Workouts, light grey -->
+  <!-- Workouts, light grey -->
   <section class="section bg-light-grey" id="workouts">
     <div class="inner">
       <h2 class="big-title">Workouts</h2>
       <div class="chart-error" data-sheet="Monthly"></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-10"></canvas></div></div>
-      <div class="chart-block"><div class="chart-box short"><canvas id="chart-11"></canvas></div></div>
+      <div class="chart-block">
+        <div class="filters" role="group" aria-label="Show" data-group="workouts">
+          <button class="filter-btn" type="button" data-view="workouts" aria-pressed="true">Workouts</button>
+          <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+        </div>
+        <div class="chart-box"><canvas id="chart-workouts"></canvas></div>
+      </div>
     </div>
   </section>
 
@@ -510,12 +523,12 @@
                   : (items[0] ? items[0].label : "");
               },
               label: function (ctx) {
-                return " " + ctx.dataset.label + ": " + fmt(ctx.parsed.y, opts.unit);
+                return " " + ctx.dataset.label + ": " + fmt(ctx.parsed.y, ctx.dataset.unit);
               },
               footer: opts.stacked ? function (items) {
                 var total = 0, any = false;
                 items.forEach(function (i) { if (i.parsed.y !== null) { total += i.parsed.y; any = true; } });
-                return any ? "Total: " + fmt(total, opts.unit) : "";
+                return any ? "Total: " + fmt(total, items[0].dataset.unit) : "";
               } : undefined
             }
           }
@@ -551,17 +564,24 @@
     function upsert(id, type, data, options) {
       var stacked = !!(options.scales.y && options.scales.y.stacked);
       options.scales.y.max = dataMax(data, stacked);
-      if (charts[id]) {
-        charts[id].data.labels = data.labels;
-        charts[id].data.titles = data.titles;
-        data.datasets.forEach(function (ds, i) {
-          if (charts[id].data.datasets[i]) charts[id].data.datasets[i].data = ds.data;
-          else charts[id].data.datasets.push(ds);
-        });
-        charts[id].data.datasets.length = data.datasets.length;
-        charts[id].options.scales.y.max = options.scales.y.max;
-        charts[id].update("none");
-        return charts[id];
+      var c = charts[id];
+      if (c) {
+        var sameSets = c.data.datasets.length === data.datasets.length &&
+          c.data.datasets.every(function (ds, i) { return ds.label === data.datasets[i].label && ds.unit === data.datasets[i].unit; });
+        c.data.labels = data.labels;
+        c.data.titles = data.titles;
+        c.data.years = data.years;
+        if (sameSets) {
+          // Background refresh: keep legend toggles, no re-animation
+          data.datasets.forEach(function (ds, i) { c.data.datasets[i].data = ds.data; });
+        } else {
+          c.data.datasets = data.datasets; // view switched
+        }
+        c.options.scales.y.max = options.scales.y.max;
+        c.options.scales.y.title.text = options.scales.y.title.text;
+        c.options.scales.y.title.display = options.scales.y.title.display;
+        c.update(sameSets ? "none" : undefined);
+        return c;
       }
       charts[id] = new Chart(document.getElementById(id), { type: type, data: data, options: options });
       return charts[id];
@@ -583,71 +603,133 @@
                      G: get("G"), H: get("H"), I: get("I"), J: get("J") };
         if (d) {
           if (d > today) continue; // only up to the current month
-          out.push({ tick: MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear(),
+          out.push({ year: d.getUTCFullYear(), tick: MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear(),
                      title: MONTHS_LONG[d.getUTCMonth()] + " " + d.getUTCFullYear(), v: vals });
         } else {
           // Unrecognised month label: keep the row only if it has real data
           var hasData = Object.keys(vals).some(function (k) { return vals[k]; });
-          if (hasData) out.push({ tick: label, title: label, v: vals });
+          if (hasData) out.push({ year: null, tick: label, title: label, v: vals });
         }
       }
       return out;
     }
 
-    function series(months, col) { return months.map(function (m) { return m.v[col]; }); }
+    // Switchable charts: each view lists [label, column, colour key]
+    var VIEWS = {
+      totals: {
+        canvas: "chart-totals", stacked: true, legend: true, current: "quantity",
+        views: {
+          quantity: { y: "quantity", title: "Total activities per month",
+                      sets: [["Runs", "B", "run"], ["Swims", "C", "swim"], ["Workouts", "D", "workout"]] },
+          hours:    { y: "hours", unit: "h", title: "Total exercises per month",
+                      sets: [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"]] }
+        }
+      },
+      running: {
+        canvas: "chart-running", current: "runs",
+        views: {
+          runs:     { y: "runs",  sets: [["Runs", "B", "run"]] },
+          distance: { y: "km",    unit: "km", sets: [["Distance", "E", "run"]] },
+          hours:    { y: "hours", unit: "h",  sets: [["Time", "G", "run"]] }
+        }
+      },
+      swimming: {
+        canvas: "chart-swimming", current: "swims",
+        views: {
+          swims:    { y: "swims", sets: [["Swims", "C", "swim"]] },
+          distance: { y: "km",    unit: "km", sets: [["Distance", "F", "swim"]] },
+          hours:    { y: "hours", unit: "h",  sets: [["Time", "H", "swim"]] }
+        }
+      },
+      workouts: {
+        canvas: "chart-workouts", current: "workouts",
+        views: {
+          workouts: { y: "workouts", sets: [["Workouts", "D", "workout"]] },
+          hours:    { y: "hours", unit: "h", sets: [["Time", "I", "workout"]] }
+        }
+      }
+    };
 
-    function stackSet(label, months, col, color) {
-      return { label: label, data: series(months, col), backgroundColor: color, borderWidth: 0,
-               categoryPercentage: 0.8, barPercentage: 0.9 };
+    var monthsData = null;
+
+    function monthlyData(months, sets, stacked, unit) {
+      return {
+        labels: months.map(function (m) { return m.tick; }),
+        titles: months.map(function (m) { return m.title; }),
+        years:  months.map(function (m) { return m.year; }),
+        datasets: sets.map(function (s) {
+          return {
+            label: s[0], unit: unit || "",
+            data: months.map(function (m) { return m.v[s[1]]; }),
+            backgroundColor: COLORS[s[2]], borderWidth: 0,
+            borderRadius: stacked ? 0 : 3,
+            categoryPercentage: 0.8, barPercentage: 0.9
+          };
+        })
+      };
     }
 
-    function singleSet(label, months, col, color) {
-      return { label: label, data: series(months, col), backgroundColor: color, borderWidth: 0,
-               borderRadius: 3, categoryPercentage: 0.8, barPercentage: 0.9 };
+    function renderView(group) {
+      if (!monthsData) return;
+      var g = VIEWS[group], v = g.views[g.current];
+      upsert(g.canvas, "bar", monthlyData(monthsData, v.sets, g.stacked, v.unit),
+             baseOptions(v.y, { stacked: g.stacked, legend: g.legend }));
+      if (v.title) document.getElementById("totals-title").textContent = v.title;
     }
 
     function renderMonthly(months) {
       if (!months.length) throw new Error("any months from the Monthly tab. Check the Monthly gid points at the right tab and that column A from row 2 holds the months.");
-      var labels = months.map(function (m) { return m.tick; });
-      var titles = months.map(function (m) { return m.title; });
-      var data = function (sets) { return { labels: labels, titles: titles, datasets: sets }; };
+      monthsData = months;
+      Object.keys(VIEWS).forEach(renderView);
 
-      // Chart 1: activities (count), stacked
-      upsert("chart-1", "bar", data([
-        stackSet("Runs", months, "B", COLORS.run),
-        stackSet("Swims", months, "C", COLORS.swim),
-        stackSet("Workouts", months, "D", COLORS.workout)
-      ]), baseOptions("quantity", { stacked: true, legend: true }));
-
-      // Chart 2: hours ex. cycling, stacked
-      upsert("chart-2", "bar", data([
-        stackSet("Runs", months, "G", COLORS.run),
-        stackSet("Swims", months, "H", COLORS.swim),
-        stackSet("Workouts", months, "I", COLORS.workout)
-      ]), baseOptions("hours", { stacked: true, legend: true, unit: "h" }));
-
-      // Chart 3: hours inc. cycling, stacked
-      upsert("chart-3", "bar", data([
-        stackSet("Runs", months, "G", COLORS.run),
-        stackSet("Swims", months, "H", COLORS.swim),
-        stackSet("Workouts", months, "I", COLORS.workout),
-        stackSet("Cycling", months, "J", COLORS.cycle)
-      ]), baseOptions("hours", { stacked: true, legend: true, unit: "h" }));
-
-      // Running
-      upsert("chart-4", "bar", data([singleSet("Runs", months, "B", COLORS.run)]), baseOptions("runs"));
-      upsert("chart-5", "bar", data([singleSet("Distance", months, "E", COLORS.run)]), baseOptions("km", { unit: "km" }));
-      upsert("chart-6", "bar", data([singleSet("Time", months, "G", COLORS.run)]), baseOptions("hours", { unit: "h" }));
-
-      // Swimming
-      upsert("chart-7", "bar", data([singleSet("Swims", months, "C", COLORS.swim)]), baseOptions("swims"));
-      upsert("chart-8", "bar", data([singleSet("Distance", months, "F", COLORS.swim)]), baseOptions("km", { unit: "km" }));
-      upsert("chart-9", "bar", data([singleSet("Time", months, "H", COLORS.swim)]), baseOptions("hours", { unit: "h" }));
-
-      // Workouts
-      upsert("chart-10", "bar", data([singleSet("Workouts", months, "D", COLORS.workout)]), baseOptions("workouts"));
-      upsert("chart-11", "bar", data([singleSet("Time", months, "I", COLORS.workout)]), baseOptions("hours", { unit: "h" }));
+      // Hours inc. cycling, stacked (no switch)
+      upsert("chart-3", "bar", monthlyData(months,
+        [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"], ["Cycling", "J", "cycle"]], true, "h"),
+        baseOptions("hours", { stacked: true, legend: true }));
     }
+
+    document.querySelectorAll(".filters[data-group]").forEach(function (groupEl) {
+      var group = groupEl.getAttribute("data-group");
+      groupEl.querySelectorAll(".filter-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          VIEWS[group].current = btn.getAttribute("data-view");
+          groupEl.querySelectorAll(".filter-btn").forEach(function (b) {
+            b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+          });
+          renderView(group);
+        });
+      });
+    });
+
+    // Light grey vertical line + year label wherever the year changes.
+    // Only drawn on charts that carry data.years (so not the year-overlay chart).
+    var yearMarkerPlugin = {
+      id: "yearMarkers",
+      beforeDatasetsDraw: function (c) {
+        var years = c.data.years;
+        if (!years || !years.length) return;
+        var x = c.scales.x, area = c.chartArea, ctx = c.ctx;
+        ctx.save();
+        ctx.strokeStyle = "#C3C7CD";
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "rgba(67,71,78,0.75)";
+        ctx.font = "600 11px 'Open Sans', sans-serif";
+        ctx.textBaseline = "top";
+        ctx.textAlign = "left";
+        for (var i = 0; i < years.length; i++) {
+          if (years[i] === null) continue;
+          if (i === 0) { ctx.fillText(years[i], area.left + 4, area.top + 2); continue; }
+          if (years[i] === years[i - 1]) continue;
+          var px = (x.getPixelForValue(i - 1) + x.getPixelForValue(i)) / 2;
+          ctx.beginPath();
+          ctx.moveTo(Math.round(px) + 0.5, area.top);
+          ctx.lineTo(Math.round(px) + 0.5, area.bottom);
+          ctx.stroke();
+          ctx.fillText(years[i], px + 4, area.top + 2);
+        }
+        ctx.restore();
+      }
+    };
 
     /* ---------------- Record tab: charts 12–13 ---------------- */
 
@@ -699,6 +781,9 @@
         var d = new Date(weeks[k].start.getTime() + 3 * DAY_MS); // label by the week's Thursday
         return MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear();
       });
+      var years = order.map(function (k) {
+        return new Date(weeks[k].start.getTime() + 3 * DAY_MS).getUTCFullYear();
+      });
       var titles = order.map(function (k) {
         var d = weeks[k].start;
         return "Week of " + d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear();
@@ -720,7 +805,7 @@
       options.plugins.tooltip.callbacks.label = function (ctx) {
         return " " + ctx.dataset.label + ": " + fmt(ctx.parsed.y, ctx.dataset.unit);
       };
-      upsert("chart-12", "line", { labels: labels, titles: titles, datasets: datasets }, options);
+      upsert("chart-12", "line", { labels: labels, titles: titles, years: years, datasets: datasets }, options);
     }
 
     // Chart 13: one year on the x axis, each year overlaid
@@ -810,10 +895,10 @@
       c.update();
     }
 
-    document.querySelectorAll(".filter-btn").forEach(function (btn) {
+    document.querySelectorAll(".filter-btn[data-filter]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         bioFilter = btn.getAttribute("data-filter");
-        document.querySelectorAll(".filter-btn").forEach(function (b) {
+        document.querySelectorAll(".filter-btn[data-filter]").forEach(function (b) {
           b.setAttribute("aria-pressed", b === btn ? "true" : "false");
         });
         applyBioFilter();
@@ -846,6 +931,7 @@
     }
 
     function init() {
+      Chart.register(yearMarkerPlugin);
       loadAll();
       setInterval(function () { if (!document.hidden) loadAll(); }, REFRESH_MS);
       document.addEventListener("visibilitychange", function () {
