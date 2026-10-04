@@ -97,6 +97,14 @@
     .chart-block + .chart-block { margin-top: 3.5rem; }
 
     .big-title.with-sub { margin-bottom: 0; }
+    .sub-title {
+      margin: 0 0 1.25rem;
+      font-weight: 700;
+      font-size: 1.95rem;
+      line-height: 1.15;
+      text-align: center;
+      color: var(--dark-blue);
+    }
     .chart-sub {
       margin: 0.35rem 0 1.25rem;
       font-weight: 600;
@@ -163,6 +171,7 @@
       .section { padding: 2.5rem 1rem; }
       .big-title { font-size: 1.85rem; margin-bottom: 1.5rem; }
       .big-title.with-sub { margin-bottom: 0; }
+      .sub-title { font-size: 1.4rem; }
       .chart-box { height: 320px; }
       .chart-box.short { height: 240px; }
       .chart-box.tall { height: 380px; }
@@ -223,6 +232,17 @@
           <button class="filter-btn vo2-toggle" type="button" data-vo2="running" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
         </div>
         <div class="chart-box"><canvas id="chart-running"></canvas></div>
+      </div>
+
+      <div class="chart-block">
+        <h3 class="sub-title">Totals</h3>
+        <div class="chart-error" data-sheet="Running"></div>
+        <div class="filters" role="group" aria-label="Show" id="running-totals-views">
+          <button class="filter-btn" type="button" data-yview="distance" aria-pressed="true">Distance</button>
+          <button class="filter-btn" type="button" data-yview="runs" aria-pressed="false">Runs</button>
+          <button class="filter-btn" type="button" data-yview="range" aria-pressed="false">Range</button>
+        </div>
+        <div class="chart-box"><canvas id="chart-running-totals"></canvas></div>
       </div>
     </div>
   </section>
@@ -328,7 +348,8 @@
     var PUB_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8jr6FAFcoQxcHHNBgmZ1fruqkAWumO9wev3IEFvRFCUzOVj7rKNOYGF-GtEvur7ItS6Mc4YiClPN-/pub";
     var GIDS = {
       Monthly: "539622156",
-      Record:  "0"
+      Record:  "0",
+      Running: "2089936399"
     };
 
     // Monthly!A2:J73
@@ -817,6 +838,72 @@
       }
     };
 
+    /* ---------------- Running tab: yearly totals ---------------- */
+
+    // Running!A2:H7 -> one row per year (A = year)
+    var RUNNING_FIRST_ROW = 2;
+    var RUNNING_LAST_ROW  = 7;
+    var RANGE_GREENS = ["#B5E2C3", "#7FC898", "#47A86C", "#2A8250", "#175A35"]; // light -> dark
+
+    var RUN_TOTALS = {
+      canvas: "chart-running-totals",
+      current: "distance",
+      views: {
+        distance: { y: "km",   unit: "km", sets: [["Distance", "H", COLORS.run]] },
+        runs:     { y: "runs", unit: "",   sets: [["Runs", "G", COLORS.run]] },
+        range:    { y: "runs", unit: "", legend: true, sets: [
+          ["<5 km", "B", RANGE_GREENS[0]], ["5 km", "C", RANGE_GREENS[1]], ["5 - 10 km", "D", RANGE_GREENS[2]],
+          ["10 km", "E", RANGE_GREENS[3]], ["10 km+", "F", RANGE_GREENS[4]]
+        ] }
+      }
+    };
+    var runningYears = null;
+
+    function buildRunningYears(rows) {
+      var thisYear = new Date().getFullYear();
+      var out = [];
+      var last = Math.min(RUNNING_LAST_ROW, rows.length);
+      for (var r = RUNNING_FIRST_ROW; r <= last; r++) {
+        var row = rows[r - 1] || [];
+        var year = parseInt(String(row[COL.A] || "").trim(), 10);
+        if (isNaN(year) || year > thisYear) continue; // only up to the current year
+        var v = {};
+        ["B", "C", "D", "E", "F", "G", "H"].forEach(function (c) { v[c] = num(row[COL[c]]); });
+        out.push({ year: year, v: v });
+      }
+      if (!out.length) throw new Error("any years from the Running tab. Check the Running gid and that A2:A7 holds the years.");
+      return out;
+    }
+
+    function renderRunningTotals() {
+      if (!runningYears) return;
+      var v = RUN_TOTALS.views[RUN_TOTALS.current];
+      var labels = runningYears.map(function (y) { return String(y.year); });
+      var data = {
+        labels: labels,
+        titles: labels,
+        datasets: v.sets.map(function (set) {
+          return {
+            label: set[0], unit: v.unit,
+            data: runningYears.map(function (y) { return y.v[set[1]]; }),
+            backgroundColor: set[2], borderWidth: 0, borderRadius: 3,
+            categoryPercentage: v.sets.length > 1 ? 0.8 : 0.6, barPercentage: 0.9
+          };
+        })
+      };
+      upsert(RUN_TOTALS.canvas, "bar", data, baseOptions(v.y, { legend: !!v.legend }));
+    }
+
+    document.querySelectorAll("#running-totals-views .filter-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        RUN_TOTALS.current = btn.getAttribute("data-yview");
+        document.querySelectorAll("#running-totals-views .filter-btn").forEach(function (b) {
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
+        renderRunningTotals();
+      });
+    });
+
     /* ---------------- Record tab: charts 12–13 ---------------- */
 
     var BIO = [
@@ -1067,7 +1154,15 @@
         })
         .catch(function (err) { console.error("Fitness: Record", err); showError("Record", err.message); });
 
-      Promise.all([monthly, record]).then(function () {
+      var running = fetchSheet("Running")
+        .then(function (rows) {
+          showError("Running", "");
+          runningYears = buildRunningYears(rows);
+          renderRunningTotals();
+        })
+        .catch(function (err) { console.error("Fitness: Running", err); showError("Running", err.message); });
+
+      Promise.all([monthly, record, running]).then(function () {
         var n = new Date();
         document.getElementById("last-updated").textContent =
           "Updated " + ("0" + n.getHours()).slice(-2) + ":" + ("0" + n.getMinutes()).slice(-2);
