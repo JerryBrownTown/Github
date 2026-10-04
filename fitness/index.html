@@ -138,6 +138,9 @@
     .cycling-toggle { margin-left: 0.75rem; border-color: #8C9199; }
     .cycling-toggle[aria-pressed="true"] { background: #8C9199; border-color: #8C9199; }
     .filter-btn[hidden] { display: none; }
+    .vo2-toggle { margin-left: 0.75rem; }
+    .vo2-toggle[aria-pressed="true"] { background: #F07F1E; border-color: #F07F1E; }
+    .filters > .vo2-toggle:first-child { margin-left: 0; }
     .bio-filters { margin: 0 0 1.25rem; }
     .bio-filters .filters { margin: 0 0 0.6rem; }
     .swatch {
@@ -199,6 +202,7 @@
           <button class="filter-btn" type="button" data-view="quantity" aria-pressed="true">Quantity</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
           <button class="filter-btn cycling-toggle" type="button" id="cycling-toggle" aria-pressed="false" hidden>Show cycling</button>
+          <button class="filter-btn vo2-toggle" type="button" data-vo2="totals" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
         </div>
         <div class="chart-box"><canvas id="chart-totals"></canvas></div>
       </div>
@@ -216,6 +220,7 @@
           <button class="filter-btn" type="button" data-view="runs" aria-pressed="true">Runs</button>
           <button class="filter-btn" type="button" data-view="distance" aria-pressed="false">Distance</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+          <button class="filter-btn vo2-toggle" type="button" data-vo2="running" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
         </div>
         <div class="chart-box"><canvas id="chart-running"></canvas></div>
       </div>
@@ -233,6 +238,7 @@
           <button class="filter-btn" type="button" data-view="swims" aria-pressed="true">Swims</button>
           <button class="filter-btn" type="button" data-view="distance" aria-pressed="false">Distance</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+          <button class="filter-btn vo2-toggle" type="button" data-vo2="swimming" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
         </div>
         <div class="chart-box"><canvas id="chart-swimming"></canvas></div>
       </div>
@@ -249,6 +255,7 @@
         <div class="filters" role="group" aria-label="Show" data-group="workouts">
           <button class="filter-btn" type="button" data-view="workouts" aria-pressed="true">Workouts</button>
           <button class="filter-btn" type="button" data-view="hours" aria-pressed="false">Hours</button>
+          <button class="filter-btn vo2-toggle" type="button" data-vo2="workouts" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
         </div>
         <div class="chart-box"><canvas id="chart-workouts"></canvas></div>
       </div>
@@ -262,6 +269,9 @@
       <div class="chart-error" data-sheet="Record"></div>
 
       <div class="chart-block">
+        <div class="filters" role="group" aria-label="Show">
+          <button class="filter-btn vo2-toggle" type="button" data-vo2="weekly" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
+        </div>
         <div class="chart-box tall"><canvas id="chart-12"></canvas></div>
       </div>
 
@@ -271,6 +281,7 @@
             <button class="filter-btn" type="button" data-cat="HRV" aria-pressed="true"><span class="swatch" style="background:#D64545"></span>HRV</button>
             <button class="filter-btn" type="button" data-cat="RHR" aria-pressed="true"><span class="swatch" style="background:#2F6FD1"></span>RHR</button>
             <button class="filter-btn" type="button" data-cat="Stress" aria-pressed="true"><span class="swatch" style="background:#E0A800"></span>Stress</button>
+            <button class="filter-btn" type="button" data-cat="VO2" aria-pressed="false"><span class="swatch" style="background:#F07F1E"></span>VO2 Max</button>
           </div>
           <div class="filters" role="group" aria-label="Years" id="bio-years"></div>
         </div>
@@ -346,11 +357,18 @@
       cycle:   "#8C9199", // grey
       HRV:     "#D64545", // red
       RHR:     "#2F6FD1", // blue
-      Stress:  "#E0A800"  // yellow
+      Stress:  "#E0A800", // yellow
+      VO2:     "#F07F1E"  // orange
     };
 
     // Column letters -> 0-based indices
-    var COL = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9 };
+    var COL = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9, K: 10, L: 11 };
+
+    // VO2 Max sits on its own right-hand axis with a fixed range
+    var VO2_MIN = 30, VO2_MAX = 55;
+    var vo2On = { totals: false, running: false, swimming: false, workouts: false, weekly: false };
+    var vo2ByMonth = {};  // "year-month" -> monthly average VO2 Max
+    var bioDays = null;   // last loaded Record days (for re-rendering chart 12)
 
     var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     var MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -358,7 +376,7 @@
 
     var charts = {};
     var lastLoad = 0;
-    var bioCats  = { HRV: true, RHR: true, Stress: true }; // chart 13 category toggles
+    var bioCats  = { HRV: true, RHR: true, Stress: true, VO2: false }; // chart 13 category toggles
     var bioYears = {};                                       // chart 13 year toggles (new years default on)
 
     /* ---------------- helpers ---------------- */
@@ -509,6 +527,19 @@
               display: !!yTitle, text: yTitle, color: DARK_GREY,
               font: { family: "'Open Sans', sans-serif", size: 13, weight: "600" }
             }
+          },
+          y1: {
+            display: !!opts.vo2,
+            position: "right",
+            min: VO2_MIN,
+            max: VO2_MAX,
+            grid: { drawOnChartArea: false },
+            border: { display: false },
+            ticks: { color: DARK_GREY, font: { family: "'Open Sans', sans-serif", size: 12 } },
+            title: {
+              display: true, text: "VO2 Max", color: DARK_GREY,
+              font: { family: "'Open Sans', sans-serif", size: 13, weight: "600" }
+            }
           }
         },
         plugins: {
@@ -538,7 +569,10 @@
               },
               footer: opts.stacked ? function (items) {
                 var total = 0, any = false;
-                items.forEach(function (i) { if (i.parsed.y !== null) { total += i.parsed.y; any = true; } });
+                items.forEach(function (i) {
+                  if (i.dataset.yAxisID === "y1") return; // VO2 Max isn't part of the stack total
+                  if (i.parsed.y !== null) { total += i.parsed.y; any = true; }
+                });
                 return any ? "Total: " + fmt(total, items[0].dataset.unit) : "";
               } : undefined
             }
@@ -562,6 +596,7 @@
       for (var i = 0; i < len; i++) {
         var total = 0;
         data.datasets.forEach(function (ds) {
+          if (ds.yAxisID === "y1") return;
           var v = ds.data[i];
           if (v === null || v === undefined || isNaN(v)) return;
           if (stacked) total += Math.max(0, v); else if (v > total) total = v;
@@ -586,7 +621,8 @@
           // Background refresh: keep legend toggles, no re-animation
           data.datasets.forEach(function (ds, i) { c.data.datasets[i].data = ds.data; });
         } else {
-          c.data.datasets = data.datasets; // view switched
+          c.data.datasets = data.datasets; // view switched / VO2 toggled
+          c.options = options;
         }
         c.options.scales.y.max = options.scales.y.max;
         c.options.scales.y.title.text = options.scales.y.title.text;
@@ -614,7 +650,7 @@
                      G: get("G"), H: get("H"), I: get("I"), J: get("J") };
         if (d) {
           if (d > today) continue; // only up to the current month
-          out.push({ year: d.getUTCFullYear(), tick: MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear(),
+          out.push({ key: d.getUTCFullYear() + "-" + d.getUTCMonth(), year: d.getUTCFullYear(), tick: MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear(),
                      title: MONTHS_LONG[d.getUTCMonth()] + " " + d.getUTCFullYear(), v: vals });
         } else {
           // Unrecognised month label: keep the row only if it has real data
@@ -663,6 +699,17 @@
 
     var monthsData = null;
 
+    function vo2Dataset(data, extra) {
+      var ds = {
+        type: "line", label: "VO2 Max", unit: "", yAxisID: "y1", stack: "vo2",
+        data: data, order: -1,
+        borderColor: COLORS.VO2, backgroundColor: COLORS.VO2,
+        borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true
+      };
+      for (var k in extra) ds[k] = extra[k];
+      return ds;
+    }
+
     function monthlyData(months, sets, stacked, unit) {
       return {
         labels: months.map(function (m) { return m.tick; }),
@@ -695,9 +742,26 @@
 
       if (!monthsData) return;
       var sets = withCycling ? v.sets.concat([["Cycling", "J", "cycle"]]) : v.sets;
-      upsert(g.canvas, "bar", monthlyData(monthsData, sets, g.stacked, v.unit),
-             baseOptions(v.y, { stacked: g.stacked, legend: g.legend }));
+      var data = monthlyData(monthsData, sets, g.stacked, v.unit);
+      if (vo2On[group]) {
+        data.datasets.push(vo2Dataset(monthsData.map(function (m) {
+          var val = vo2ByMonth[m.key];
+          return val === undefined ? null : val;
+        })));
+      }
+      upsert(g.canvas, "bar", data,
+             baseOptions(v.y, { stacked: g.stacked, legend: g.legend, vo2: vo2On[group] }));
     }
+
+    document.querySelectorAll(".vo2-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var key = btn.getAttribute("data-vo2");
+        vo2On[key] = !vo2On[key];
+        btn.setAttribute("aria-pressed", vo2On[key] ? "true" : "false");
+        if (key === "weekly") { if (bioDays) renderWeekly(bioDays); }
+        else renderView(key);
+      });
+    });
 
     document.getElementById("cycling-toggle").addEventListener("click", function () {
       showCycling = !showCycling;
@@ -758,7 +822,8 @@
     var BIO = [
       { key: "HRV",    col: COL.H, unit: "ms"  },
       { key: "RHR",    col: COL.I, unit: "bpm" },
-      { key: "Stress", col: COL.J, unit: ""    }
+      { key: "Stress", col: COL.J, unit: ""    },
+      { key: "VO2",    col: COL.L, unit: "", label: "VO2 Max", axis: "y1", fill: true }
     ];
 
     function buildDays(rows) {
@@ -777,10 +842,33 @@
         days.push({ date: d, v: v });
       }
       days.sort(function (a, b) { return a.date - b.date; });
+
+      // VO2 Max is only entered when it changes: blank days carry the last value forward
+      BIO.forEach(function (b) {
+        if (!b.fill) return;
+        var last = null;
+        days.forEach(function (day) {
+          if (day.v[b.key] === null) day.v[b.key] = last; else last = day.v[b.key];
+        });
+      });
       return days;
     }
 
     function avg(acc) { return acc && acc.n ? acc.s / acc.n : null; }
+
+    function buildVo2ByMonth(days) {
+      var acc = {};
+      days.forEach(function (day) {
+        var v = day.v.VO2;
+        if (v === null) return;
+        var k = day.date.getUTCFullYear() + "-" + day.date.getUTCMonth();
+        var a = acc[k] || (acc[k] = { s: 0, n: 0 });
+        a.s += v; a.n++;
+      });
+      var out = {};
+      for (var k in acc) out[k] = avg(acc[k]);
+      return out;
+    }
 
     // Chart 12: weekly averages (weeks start Monday)
     function renderWeekly(days) {
@@ -811,7 +899,7 @@
         return "Week of " + d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear();
       });
 
-      var datasets = BIO.map(function (b) {
+      var datasets = BIO.filter(function (b) { return b.key !== "VO2"; }).map(function (b) {
         return {
           label: b.key,
           data: order.map(function (k) { return avg(weeks[k][b.key]); }),
@@ -820,8 +908,11 @@
           unit: b.unit
         };
       });
+      if (vo2On.weekly) {
+        datasets.push(vo2Dataset(order.map(function (k) { return avg(weeks[k].VO2); }), { type: undefined }));
+      }
 
-      var options = baseOptions("", { legend: true });
+      var options = baseOptions("", { legend: true, vo2: vo2On.weekly });
       options.plugins.legend.labels.pointStyle = "line";
       options.scales.x.ticks.maxTicksLimit = 12;
       options.plugins.tooltip.callbacks.label = function (ctx) {
@@ -869,8 +960,9 @@
           var data = [];
           for (var w = 0; w < WEEKS; w++) data.push(avg(arr[w]));
           datasets.push({
-            label: b.key + " " + y,
+            label: (b.label || b.key) + " " + y,
             category: b.key,
+            yAxisID: b.axis || "y",
             data: data,
             borderColor: color, backgroundColor: color,
             borderWidth: y === latest ? 2.75 : 1.75,
@@ -938,8 +1030,10 @@
         c.setDatasetVisibility(i, show);
         if (show) visible.push(ds);
       });
-      // Rescale the y axis to the lines being shown
+      // Rescale the left axis to the lines being shown; show each axis only when it has lines
       c.options.scales.y.max = dataMax({ labels: c.data.labels, datasets: visible }, false);
+      c.options.scales.y.display = visible.some(function (ds) { return ds.yAxisID !== "y1"; });
+      c.options.scales.y1.display = visible.some(function (ds) { return ds.yAxisID === "y1"; });
       c.update();
     }
 
@@ -965,8 +1059,11 @@
           showError("Record", "");
           var days = buildDays(rows);
           if (!days.length) throw new Error("any days from the Record tab. Check the Record gid points at the right tab and that column B from row 367 holds dates.");
+          bioDays = days;
+          vo2ByMonth = buildVo2ByMonth(days);
           renderWeekly(days);
           renderYearOverlay(days);
+          if (monthsData) Object.keys(VIEWS).forEach(renderView);
         })
         .catch(function (err) { console.error("Fitness: Record", err); showError("Record", err.message); });
 
