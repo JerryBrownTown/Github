@@ -860,13 +860,23 @@
     };
     var runningYears = null;
 
+    // Year cells may be plain years ("2022") or dates ("01/01/2022", "Jan 2022", "1/1/22")
+    function parseYear(raw) {
+      var str = String(raw || "").trim();
+      if (!str) return NaN;
+      var m = str.match(/(?:^|\D)((?:19|20)\d{2})(?:\D|$)/);
+      if (m) return +m[1];
+      var d = parseDate(str);
+      return d ? d.getUTCFullYear() : NaN;
+    }
+
     function buildRunningYears(rows) {
       var thisYear = new Date().getFullYear();
       var out = [];
       var last = Math.min(RUNNING_LAST_ROW, rows.length);
       for (var r = RUNNING_FIRST_ROW; r <= last; r++) {
         var row = rows[r - 1] || [];
-        var year = parseInt(String(row[COL.A] || "").trim(), 10);
+        var year = parseYear(row[COL.A]);
         if (isNaN(year) || year > thisYear) continue; // only up to the current year
         var v = {};
         ["B", "C", "D", "E", "F", "G", "H"].forEach(function (c) { v[c] = num(row[COL[c]]); });
