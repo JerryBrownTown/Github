@@ -116,6 +116,7 @@
     .chart-box { position: relative; width: 100%; height: 380px; }
     .chart-box.short { height: 280px; }
     .chart-box.tall  { height: 440px; }
+    .chart-box.half  { max-width: 50%; margin: 0 auto; }
 
     .chart-error {
       display: none;
@@ -175,6 +176,7 @@
       .chart-box { height: 320px; }
       .chart-box.short { height: 240px; }
       .chart-box.tall { height: 380px; }
+      .chart-box.half { max-width: 100%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -218,7 +220,7 @@
 
       <div class="chart-block">
         <h3 class="sub-title">Totals</h3>
-        <div class="chart-box"><canvas id="chart-exercise-totals"></canvas></div>
+        <div class="chart-box half"><canvas id="chart-exercise-totals"></canvas></div>
       </div>
     </div>
   </section>
@@ -247,7 +249,7 @@
           <button class="filter-btn" type="button" data-yview="runs" aria-pressed="false">Runs</button>
           <button class="filter-btn" type="button" data-yview="range" aria-pressed="false">Range</button>
         </div>
-        <div class="chart-box"><canvas id="chart-running-totals"></canvas></div>
+        <div class="chart-box half" id="running-totals-box"><canvas id="chart-running-totals"></canvas></div>
       </div>
     </div>
   </section>
@@ -924,6 +926,8 @@
     function renderRunningTotals() {
       if (!runningYears) return;
       var v = RUN_TOTALS.views[RUN_TOTALS.current];
+      // Half width, except the Range view (five columns per year) which gets the full width
+      document.getElementById("running-totals-box").classList.toggle("half", RUN_TOTALS.current !== "range");
       var labels = runningYears.map(function (y) { return String(y.year); });
       var data = {
         labels: labels,
