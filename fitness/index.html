@@ -349,7 +349,7 @@
     var GIDS = {
       Monthly: "539622156",
       Record:  "0",
-      Running: "2089936399"
+      Running: "113863064"
     };
 
     // Monthly!A2:J73
@@ -504,6 +504,7 @@
       }
       return fetch(sheetURL(name), { cache: "no-store" })
         .then(function (res) {
+          if (res.status === 400) throw new Error("the " + name + " tab: Google says it isn't part of the published sheet. In Google Sheets, open File → Share → Publish to web, and make sure this tab is included.");
           if (!res.ok) throw new Error("the " + name + " tab returned status " + res.status + ". Check the sheet is still published to the web.");
           return res.text();
         })
