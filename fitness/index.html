@@ -215,6 +215,11 @@
         </div>
         <div class="chart-box"><canvas id="chart-totals"></canvas></div>
       </div>
+
+      <div class="chart-block">
+        <h3 class="sub-title">Totals</h3>
+        <div class="chart-box"><canvas id="chart-exercise-totals"></canvas></div>
+      </div>
     </div>
   </section>
 
@@ -790,10 +795,40 @@
       renderView("totals");
     });
 
+    // Exercise totals: yearly hours, summed from the monthly hours columns
+    function renderExerciseTotals(months) {
+      var sets = [["Runs", "G", "run"], ["Swims", "H", "swim"], ["Workouts", "I", "workout"]];
+      var byYear = {}, years = [];
+      months.forEach(function (m) {
+        if (m.year === null) return;
+        if (!byYear[m.year]) { byYear[m.year] = {}; years.push(m.year); }
+        sets.forEach(function (set) {
+          var v = m.v[set[1]];
+          if (v === null) return;
+          byYear[m.year][set[1]] = (byYear[m.year][set[1]] || 0) + v;
+        });
+      });
+      years.sort();
+      var labels = years.map(String);
+      upsert("chart-exercise-totals", "bar", {
+        labels: labels,
+        titles: labels,
+        datasets: sets.map(function (set) {
+          return {
+            label: set[0], unit: "h",
+            data: years.map(function (y) { var v = byYear[y][set[1]]; return v === undefined ? null : v; }),
+            backgroundColor: COLORS[set[2]], borderWidth: 0,
+            categoryPercentage: 0.6, barPercentage: 0.9
+          };
+        })
+      }, baseOptions("hours", { stacked: true, legend: true }));
+    }
+
     function renderMonthly(months) {
       if (!months.length) throw new Error("any months from the Monthly tab. Check the Monthly gid points at the right tab and that column A from row 2 holds the months.");
       monthsData = months;
       Object.keys(VIEWS).forEach(renderView);
+      renderExerciseTotals(months);
     }
 
     document.querySelectorAll(".filters[data-group]").forEach(function (groupEl) {
