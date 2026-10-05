@@ -104,6 +104,24 @@
     .player.gerry { --c: var(--gerry); }
     .player.katie { --c: var(--katie); }
 
+    /* Crown over whoever's winning. Space is always reserved so nothing jumps. */
+    .crown {
+      width: 56px;
+      height: 40px;
+      margin-bottom: 0.5rem;
+      color: #F4C430;
+      visibility: hidden;
+      transform: scale(0.4) translateY(10px);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.2s ease, visibility 0s 0.35s;
+    }
+    .player.leader .crown {
+      visibility: visible;
+      transform: none;
+      opacity: 1;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.2s ease;
+    }
+
     .name {
       font-size: 2.4rem;
       line-height: 1;
@@ -181,11 +199,12 @@
       .name { font-size: 1.8rem; }
       .score { font-size: 3.2rem; }
       .bar { width: 64px; }
+      .crown { width: 44px; height: 32px; }
       .controls button { width: 50px; height: 50px; font-size: 1.7rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .menu-toggle span, .bar, .score, .controls button { transition: none; }
+      .menu-toggle span, .bar, .score, .controls button, .crown, .player.leader .crown { transition: none; }
     }
   </style>
 </head>
@@ -208,6 +227,7 @@
   <main>
     <div class="chart">
       <div class="player gerry" data-player="gerry">
+        <svg class="crown" viewBox="0 0 64 44" aria-hidden="true"><path d="M4 14 L18 26 L32 4 L46 26 L60 14 L54 40 H10 Z" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
         <div class="name">Gerry</div>
         <div class="score" aria-live="polite">20</div>
         <img class="face" src="/images/monopoly_gerry.webp" alt="Gerry">
@@ -219,6 +239,7 @@
       </div>
 
       <div class="player katie" data-player="katie">
+        <svg class="crown" viewBox="0 0 64 44" aria-hidden="true"><path d="M4 14 L18 26 L32 4 L46 26 L60 14 L54 40 H10 Z" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
         <div class="name">Katie</div>
         <div class="score" aria-live="polite">17</div>
         <img class="face" src="/images/monopoly_katie.webp" alt="Katie">
@@ -315,6 +336,9 @@
         p.score.textContent = s;
         p.bar.style.height = Math.max(MIN_BAR, Math.round((s / top) * max)) + "px";
         p.minus.disabled = s <= 0;
+        // Crown for the outright leader only; no crown if it's a tie
+        var other = key === "gerry" ? scores.katie : scores.gerry;
+        p.el.classList.toggle("leader", s > other);
       });
     }
 
