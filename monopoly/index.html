@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monopoly</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --tan: #FDF0E6;
+      --katie: #F08E80;
+      --gerry: #0B0D63;
+      --bar-max: 300px;
+      --face: 180px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      background: var(--tan);
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar + footer (same as the main site) */
+    .topbar, .footer {
+      display: flex;
+      align-items: center;
+      min-height: 5rem;
+      padding: 1rem 2rem;
+    }
+    .topbar { justify-content: space-between; position: relative; z-index: 20; }
+    .footer { background: var(--gerry); }
+
+    .brand {
+      margin: 0;
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      font-size: 2.5rem;
+      line-height: 1;
+      color: var(--katie);
+    }
+
+    /* Burger menu (page switcher) */
+    .site-menu { position: relative; }
+    .menu-toggle {
+      display: flex; flex-direction: column; justify-content: center; gap: 6px;
+      width: 48px; height: 48px; padding: 10px;
+      background: transparent; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .menu-toggle span {
+      display: block; height: 4px; border-radius: 2px; background: var(--katie);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(10px) rotate(45deg); }
+    .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-10px) rotate(-45deg); }
+    .menu-toggle:focus-visible, .menu-panel a:focus-visible { outline: 3px solid var(--gerry); outline-offset: 2px; }
+    .menu-panel {
+      position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;
+      margin: 0; padding: 8px; list-style: none;
+      background: var(--gerry); border-radius: 8px; box-shadow: 0 8px 24px rgba(11,13,99,0.3);
+    }
+    .menu-panel[hidden] { display: none; }
+    .menu-panel a {
+      display: block; padding: 10px 14px; border-radius: 6px;
+      font-family: 'Shrikhand', cursive; font-weight: 400; font-size: 1.15rem;
+      color: #ffffff; text-decoration: none;
+    }
+    .menu-panel a:hover { background: rgba(255,255,255,0.1); }
+    .menu-panel a[aria-current="page"] { color: var(--katie); }
+
+    /* Score chart */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 6rem;
+    }
+
+    .player {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 220px;
+      color: var(--c);
+    }
+    .player.gerry { --c: var(--gerry); }
+    .player.katie { --c: var(--katie); }
+
+    .name {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+    .score {
+      font-size: 4.5rem;
+      line-height: 1.05;
+      margin-bottom: 0.4rem;
+      font-variant-numeric: tabular-nums;
+      transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+    }
+    .score.bump { transform: scale(1.18); }
+
+    .face {
+      width: var(--face);
+      height: var(--face);
+      object-fit: contain;
+      display: block;
+      margin-bottom: -4px; /* sits the chin right on the bar */
+      position: relative;
+      z-index: 1;
+    }
+
+    .bar {
+      width: 90px;
+      height: 0;
+      background: var(--c);
+      border-radius: 14px 14px 0 0;
+      transition: height 0.6s cubic-bezier(.22,1,.36,1);
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.9rem;
+      margin-top: 1.25rem;
+    }
+    .controls button {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 3px solid var(--c);
+      background: transparent;
+      color: var(--c);
+      font-family: 'Shrikhand', cursive;
+      font-size: 2rem;
+      line-height: 1;
+      padding: 0 0 4px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    }
+    .controls button.plus { background: var(--c); color: var(--tan); }
+    .controls button:hover { transform: translateY(-2px); }
+    .controls button:active { transform: scale(0.94); }
+    .controls button:focus-visible { outline: 3px solid var(--c); outline-offset: 3px; }
+    .controls button:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+    .sync-note {
+      position: fixed;
+      left: 50%;
+      bottom: 6.5rem;
+      transform: translateX(-50%);
+      font-family: -apple-system, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #8b1a1a;
+      text-align: center;
+    }
+    .sync-note:empty { display: none; }
+
+    @media (max-width: 768px) {
+      :root { --bar-max: 200px; --face: 130px; }
+      .topbar, .footer { padding: 0.75rem 1rem; }
+      .chart { gap: 1.5rem; }
+      .player { width: 150px; }
+      .name { font-size: 1.8rem; }
+      .score { font-size: 3.2rem; }
+      .bar { width: 64px; }
+      .controls button { width: 50px; height: 50px; font-size: 1.7rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .menu-toggle span, .bar, .score, .controls button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <h1 class="brand">Hands</h1>
+    <nav class="site-menu" aria-label="Pages">
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu-panel" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="menu-panel" id="site-menu-panel" hidden>
+        <li><a href="/">Hands</a></li>
+        <li><a href="/fitness">Fitness</a></li>
+        <li><a href="/monopoly" aria-current="page">Monopoly</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="chart">
+      <div class="player gerry" data-player="gerry">
+        <div class="name">Gerry</div>
+        <div class="score" aria-live="polite">20</div>
+        <img class="face" src="/images/monopoly_gerry.webp" alt="Gerry">
+        <div class="bar"></div>
+        <div class="controls">
+          <button type="button" class="minus" aria-label="Take a point off Gerry">&minus;</button>
+          <button type="button" class="plus" aria-label="Add a point to Gerry">+</button>
+        </div>
+      </div>
+
+      <div class="player katie" data-player="katie">
+        <div class="name">Katie</div>
+        <div class="score" aria-live="polite">17</div>
+        <img class="face" src="/images/monopoly_katie.webp" alt="Katie">
+        <div class="bar"></div>
+        <div class="controls">
+          <button type="button" class="minus" aria-label="Take a point off Katie">&minus;</button>
+          <button type="button" class="plus" aria-label="Add a point to Katie">+</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="sync-note" id="sync-note"></div>
+
+  <footer class="footer">
+    <div class="brand">Hands</div>
+  </footer>
+
+  <!-- Burger menu -->
+  <script>
+  (function () {
+    var btn = document.querySelector(".menu-toggle");
+    var panel = document.getElementById("site-menu-panel");
+    function setOpen(open) {
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      panel.hidden = !open;
+    }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); setOpen(panel.hidden); });
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !panel.hidden) { setOpen(false); btn.focus(); }
+    });
+  })();
+  </script>
+
+  <!-- Scores -->
+  <script>
+  (function () {
+    // ---- Shared saving via your Google Sheet (optional but recommended) ----
+    // Reads Monopoly!A1:B2 (A1 "Gerry", B1 "Katie", scores in A2 and B2).
+    // Writes go through the "monopoly" branch in your Apps Script doPost.
+    // Leave APPS_SCRIPT_URL as "" to save on this device only.
+    var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
+    var SHEET_GID = "632682690"; // the Monopoly tab
+    var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyu3hEWoO5Qx_4iFyIghKgdF_aOqXhxwtZG7dZpj4s6iZG-Jlb1t659Jzu5Ca-2baGwsQ/exec";
+
+    var STORAGE_KEY = "monopolyDealScores";
+    var DEFAULTS = { gerry: 20, katie: 17 };
+    var MIN_BAR = 24;
+
+    var scores = loadLocal();
+    var saveTimer = null;
+    var note = document.getElementById("sync-note");
+
+    var players = {};
+    document.querySelectorAll(".player").forEach(function (el) {
+      var key = el.getAttribute("data-player");
+      players[key] = {
+        el: el,
+        score: el.querySelector(".score"),
+        bar: el.querySelector(".bar"),
+        minus: el.querySelector(".minus"),
+        plus: el.querySelector(".plus")
+      };
+      players[key].plus.addEventListener("click", function () { change(key, 1); });
+      players[key].minus.addEventListener("click", function () { change(key, -1); });
+    });
+
+    function loadLocal() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && typeof saved.gerry === "number" && typeof saved.katie === "number") return saved;
+      } catch (e) {}
+      return { gerry: DEFAULTS.gerry, katie: DEFAULTS.katie };
+    }
+
+    function saveLocal() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); } catch (e) {}
+    }
+
+    function barMax() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar-max")) || 300;
+    }
+
+    function render() {
+      var top = Math.max(scores.gerry, scores.katie, 1);
+      var max = barMax();
+      Object.keys(players).forEach(function (key) {
+        var p = players[key];
+        var s = scores[key];
+        p.score.textContent = s;
+        p.bar.style.height = Math.max(MIN_BAR, Math.round((s / top) * max)) + "px";
+        p.minus.disabled = s <= 0;
+      });
+    }
+
+    function bump(key) {
+      var el = players[key].score;
+      el.classList.remove("bump");
+      void el.offsetWidth;
+      el.classList.add("bump");
+      setTimeout(function () { el.classList.remove("bump"); }, 220);
+    }
+
+    function change(key, delta) {
+      var next = scores[key] + delta;
+      if (next < 0) return;
+      scores[key] = next;
+      saveLocal();
+      render();
+      bump(key);
+      queueSheetSave();
+    }
+
+    // Wait a moment after the last tap so rapid tapping sends one save, not ten
+    function queueSheetSave() {
+      if (!APPS_SCRIPT_URL) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () {
+        fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "monopoly", gerry: scores.gerry, katie: scores.katie })
+        }).then(function () {
+          note.textContent = "";
+        }).catch(function () {
+          note.textContent = "Score saved on this device only. Check your connection to sync it.";
+        });
+      }, 600);
+    }
+
+    function loadFromSheet() {
+      if (!APPS_SCRIPT_URL) return;
+      var url = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
+        "/gviz/tq?tqx=out:csv&headers=0&range=A1:B2&gid=" + SHEET_GID +
+        "&_=" + Date.now();
+      fetch(url)
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.status);
+          return res.text();
+        })
+        .then(function (text) {
+          var lines = text.split(/\r?\n/).map(function (line) {
+            return line.split(",").map(function (v) { return v.replace(/"/g, "").trim(); });
+          });
+          // Only trust the sheet if the name labels are where we expect them
+          var head = lines[0] || [], row = lines[1] || [];
+          if (head[0] !== "Gerry" || head[1] !== "Katie") return;
+          var cells = [parseFloat(row[0]), parseFloat(row[1])];
+          if (isNaN(cells[0]) || isNaN(cells[1])) return;
+          scores = { gerry: cells[0], katie: cells[1] };
+          saveLocal();
+          render();
+        })
+        .catch(function () {
+          note.textContent = "Couldn't load scores from the sheet, showing the last scores saved on this device.";
+        });
+    }
+
+    // Draw at 0 first, then grow the bars in on load
+    requestAnimationFrame(function () { requestAnimationFrame(render); });
+    loadFromSheet();
+    window.addEventListener("resize", render);
+  })();
+  </script>
+
+</body>
+</html>
