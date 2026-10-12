@@ -282,7 +282,7 @@
   <script>
   (function () {
     // ---- Shared saving via your Google Sheet (optional but recommended) ----
-    // Reads Monopoly!A1:B2 (A1 "Gerry", B1 "Katie", scores in A2 and B2).
+    // Reads Monopoly!A2:B2 (Gerry's score in A2, Katie's in B2).
     // Writes go through the "monopoly" branch in your Apps Script doPost.
     // Leave APPS_SCRIPT_URL as "" to save on this device only.
     var SPREADSHEET_ID = "198TfaZ2ax5TFMbp4SenEovT5tOKq-nN_tYhGevFfEs4";
@@ -381,7 +381,7 @@
     function loadFromSheet() {
       if (!APPS_SCRIPT_URL) return;
       var url = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID +
-        "/gviz/tq?tqx=out:csv&headers=0&range=A1:B2&gid=" + SHEET_GID +
+        "/gviz/tq?tqx=out:csv&headers=0&range=A2:B2&gid=" + SHEET_GID +
         "&_=" + Date.now();
       fetch(url)
         .then(function (res) {
@@ -389,12 +389,10 @@
           return res.text();
         })
         .then(function (text) {
-          var lines = text.split(/\r?\n/).map(function (line) {
-            return line.split(",").map(function (v) { return v.replace(/"/g, "").trim(); });
+          // Monopoly!A2:B2 comes back as a single line, e.g. "21","17"
+          var row = text.split(/\r?\n/)[0].split(",").map(function (v) {
+            return v.replace(/"/g, "").trim();
           });
-          // Only trust the sheet if the name labels are where we expect them
-          var head = lines[0] || [], row = lines[1] || [];
-          if (head[0] !== "Gerry" || head[1] !== "Katie") return;
           var cells = [parseFloat(row[0]), parseFloat(row[1])];
           if (isNaN(cells[0]) || isNaN(cells[1])) return;
           scores = { gerry: cells[0], katie: cells[1] };
