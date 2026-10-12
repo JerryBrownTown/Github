@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Shrikhand&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -50,8 +50,8 @@
 
     .brand {
       margin: 0;
-      font-family: 'Shrikhand', cursive;
-      font-weight: 400;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 900;
       font-size: 2.5rem;
       line-height: 1;
       color: var(--pink);
@@ -92,8 +92,8 @@
     .section { padding: 3rem 2rem; }
     .section-title {
       margin: 0 0 2rem;
-      font-family: 'Shrikhand', cursive;
-      font-weight: 400;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 900;
       font-size: 4rem;
       line-height: 1.1;
       text-align: center;
@@ -105,7 +105,7 @@
     /* Today stats */
     .today-date {
       text-align: center;
-      font-family: 'Fraunces', serif;
+      font-family: 'Roboto', sans-serif;
       font-weight: 700;
       font-size: 1.4rem;
       color: var(--text);
@@ -138,7 +138,8 @@
       color: var(--muted);
     }
     .stat-value {
-      font-family: 'Shrikhand', cursive;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 700;
       font-size: 2.6rem;
       line-height: 1.15;
       margin-top: 6px;
@@ -160,7 +161,7 @@
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
       gap: 8px 20px; padding: 0 4px 10px;
     }
-    .chart-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; }
+    .chart-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; }
     .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
     .legend span { display: inline-flex; align-items: center; gap: 6px; }
     .sw { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
@@ -180,8 +181,9 @@
       display: flex; justify-content: space-between; align-items: baseline;
       gap: 12px; margin-bottom: 12px;
     }
-    .progress-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; }
-    .progress-pct { font-family: 'Shrikhand', cursive; font-size: 2rem; line-height: 1; color: var(--accent, #6CF0A6); }
+    .progress-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; }
+    .progress-pct { font-family: 'Roboto', sans-serif;
+      font-weight: 700; font-size: 2rem; line-height: 1; color: var(--accent, #6CF0A6); }
     .progress-track {
       position: relative; height: 22px; border-radius: 11px; overflow: hidden;
       background: rgba(255,255,255,0.07);
@@ -314,7 +316,6 @@
 
   <!-- The Year -->
   <section class="section" id="year" style="padding-top:1rem;">
-    <h2 class="section-title">The Year</h2>
     <div class="block">
       <div class="chart-wrap">
         <div class="chart-head">
@@ -336,7 +337,6 @@
 
   <!-- Today -->
   <section class="section" id="today" style="padding-top:1rem;">
-    <h2 class="section-title">Today</h2>
     <div class="block">
       <p class="today-date" id="today-date">&nbsp;</p>
       <p class="today-sub" id="today-sub">&nbsp;</p>
@@ -446,50 +446,45 @@
       if (withSeconds) return (h ? h + "h " : "") + m + "m " + s + "s";
       return h + "h " + pad(m) + "m";
     }
-    function dayIndex(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / dayMs); }
-    function shortDate(year, i) {
-      var dt = new Date(Date.UTC(year, 0, 1 + i));
-      return dt.getUTCDate() + " " + MONTHS[dt.getUTCMonth()];
+    function shortDate(date) {
+      return date.getUTCDate() + " " + MONTHS[date.getUTCMonth()];
     }
 
-    // ---------- Build a whole year of data ----------
-    function buildYear(year) {
-      var leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-      var count = leap ? 366 : 365;
-      var days = [];
+    // Sun data for one calendar day (date = UTC midnight of that day)
+    function dayInfo(date) {
+      var noon = new Date(date.valueOf() + 12 * 3600000);
+      var t = sunTimes(noon, LAT, LNG);
+      return {
+        date: date,
+        rise: t.rise, set: t.set,
+        riseH: hoursOf(london(t.rise)), setH: hoursOf(london(t.set)),
+        tz: london(noon).tz
+      };
+    }
+
+    // ---------- Graph window ----------
+    // In BST: Jan–Dec of this year. Outside BST: Jul–Jun around now.
+    function windowFor(p) {
+      if (p.tz === "BST") return { y: p.y, m: 0 };
+      return p.m >= 7 ? { y: p.y, m: 6 } : { y: p.y - 1, m: 6 };
+    }
+
+    function buildRange(win) {
+      var startMs = Date.UTC(win.y, win.m, 1);
+      var count = Math.round((Date.UTC(win.y + 1, win.m, 1) - startMs) / dayMs);
+      var days = [], monthStarts = [], bands = [], band = null;
       for (var i = 0; i < count; i++) {
-        var noon = new Date(Date.UTC(year, 0, 1 + i, 12));
-        var t = sunTimes(noon, LAT, LNG);
-        var r = london(t.rise), s = london(t.set);
-        days.push({
-          i: i,
-          rise: t.rise, set: t.set,
-          riseH: hoursOf(r), setH: hoursOf(s),
-          tz: london(noon).tz
-        });
+        var info = dayInfo(new Date(startMs + i * dayMs));
+        info.i = i;
+        days.push(info);
+        if (info.date.getUTCDate() === 1) monthStarts.push(i);
+        if (info.tz === "BST") {
+          if (!band) { band = { start: i, end: i }; bands.push(band); } else band.end = i;
+        } else band = null;
       }
-      var bstStart = -1, bstEnd = -1;
-      days.forEach(function (d) {
-        if (d.tz === "BST") { if (bstStart < 0) bstStart = d.i; bstEnd = d.i; }
-      });
-      var monthStarts = [];
-      for (var m = 0; m < 12; m++) monthStarts.push(dayIndex(year, m + 1, 1));
-      return { year: year, days: days, bstStart: bstStart, bstEnd: bstEnd, monthStarts: monthStarts };
-    }
-
-    // Next clock change after the given day (looks into next year if needed)
-    function nextClockChange(data, todayIdx) {
-      for (var i = todayIdx + 1; i < data.days.length; i++) {
-        if (data.days[i].tz !== data.days[i - 1].tz) {
-          return { year: data.year, i: i, to: data.days[i].tz };
-        }
-      }
-      var next = buildYear(data.year + 1);
-      if (next.days[0].tz !== data.days[data.days.length - 1].tz) return { year: next.year, i: 0, to: next.days[0].tz };
-      for (var j = 1; j < next.days.length; j++) {
-        if (next.days[j].tz !== next.days[j - 1].tz) return { year: next.year, i: j, to: next.days[j].tz };
-      }
-      return null;
+      var label = win.m === 0 ? String(win.y)
+        : MONTHS[win.m] + " " + win.y + " – " + MONTHS[(win.m + 11) % 12] + " " + (win.y + 1);
+      return { key: win.y + "-" + win.m, startMs: startMs, days: days, monthStarts: monthStarts, bands: bands, label: label };
     }
 
     // ---------- State ----------
@@ -501,7 +496,7 @@
 
     // ---------- Today panel ----------
     function renderToday() {
-      var data = state.data, idx = state.todayIdx, today = data.days[idx];
+      var today = state.data.days[state.todayIdx];
       var now = new Date(), nowP = london(now);
 
       el("today-date").textContent = longDateFmt.format(now);
@@ -513,29 +508,26 @@
 
       var lenMs = today.set - today.rise;
       el("stat-length").textContent = durationText(lenMs, false);
-      var prev = idx > 0 ? data.days[idx - 1] : (function () {
-        var b = buildYear(data.year - 1); return b.days[b.days.length - 1];
-      })();
+      var prev = dayInfo(new Date(today.date.valueOf() - dayMs));
       var diff = lenMs - (prev.set - prev.rise);
       el("stat-length-note").textContent = (diff >= 0 ? "+" : "−") + durationText(diff, true) + " vs yesterday";
 
       el("stat-clock").textContent = nowP.tz;
-      var change = nextClockChange(data, idx);
-      if (change) {
-        var verb = change.to === "GMT" ? "Clocks go back" : "Clocks go forward";
-        el("stat-clock-note").textContent = verb + " " + shortDate(change.year, change.i) +
-          (change.year !== data.year ? " " + change.year : "");
+      var period = currentPeriod(now);
+      if (period) {
+        var verb = period.type === "BST" ? "Clocks go back" : "Clocks go forward";
+        var endP = london(period.end);
+        el("stat-clock-note").textContent = verb + " " + shortDate(new Date(Date.UTC(endP.y, endP.m - 1, endP.d))) +
+          (endP.y !== nowP.y ? " " + endP.y : "");
       } else {
         el("stat-clock-note").textContent = "";
       }
 
-      // Live countdown line
       var sub;
       if (now < today.rise) sub = "Sunrise in " + durationText(today.rise - now, false).replace(/^0h /, "");
       else if (now < today.set) sub = "Sunset in " + durationText(today.set - now, false).replace(/^0h /, "");
       else {
-        var tomorrow = idx + 1 < data.days.length ? data.days[idx + 1].rise
-          : sunTimes(new Date(Date.UTC(data.year + 1, 0, 1, 12)), LAT, LNG).rise;
+        var tomorrow = dayInfo(new Date(today.date.valueOf() + dayMs)).rise;
         sub = "The sun has set · sunrise in " + durationText(tomorrow - now, false).replace(/^0h /, "");
       }
       el("today-sub").textContent = sub;
@@ -546,22 +538,28 @@
       id: "bstBand",
       beforeDatasetsDraw: function (c) {
         var d = state.data;
-        if (!d || d.bstStart < 0) return;
+        if (!d) return;
         var x = c.scales.x, area = c.chartArea, ctx = c.ctx;
-        var x1 = x.getPixelForValue(d.bstStart - 0.5), x2 = x.getPixelForValue(d.bstEnd + 0.5);
-        ctx.save();
-        ctx.fillStyle = BST_FILL;
-        ctx.fillRect(x1, area.top, x2 - x1, area.bottom - area.top);
-        ctx.fillStyle = BST_TEXT;
-        ctx.font = "700 12px 'Fraunces', serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText("BST", (x1 + x2) / 2, area.top + 6);
-        ctx.restore();
+        d.bands.forEach(function (b) {
+          var x1 = Math.max(area.left, x.getPixelForValue(b.start - 0.5));
+          var x2 = Math.min(area.right, x.getPixelForValue(b.end + 0.5));
+          ctx.save();
+          ctx.fillStyle = BST_FILL;
+          ctx.fillRect(x1, area.top, x2 - x1, area.bottom - area.top);
+          if (x2 - x1 > 40) {
+            ctx.fillStyle = BST_TEXT;
+            ctx.font = "700 12px 'Roboto', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText("BST", (x1 + x2) / 2, area.top + 6);
+          }
+          ctx.restore();
+        });
       }
     };
 
-    // Labels next to today's line: sunrise time, sunset time, and "Today"
+    // Today's sunrise + sunset times, side by side, centred vertically between
+    // the two lines so they sit in the daylight band and never cover the plotted lines
     var todayLabelPlugin = {
       id: "todayLabels",
       afterDatasetsDraw: function (c) {
@@ -571,19 +569,36 @@
         var x = c.scales.x.getPixelForValue(state.todayIdx);
         var yR = c.scales.y.getPixelForValue(today.riseH);
         var yS = c.scales.y.getPixelForValue(today.setH);
+        var yMid = (yR + yS) / 2;
         var area = c.chartArea, ctx = c.ctx;
-        var leftSide = x > area.left + (area.right - area.left) * 0.8;
+
+        var riseTxt = "↑ " + hhmm(today.riseH), setTxt = "↓ " + hhmm(today.setH), gap = 12, padX = 10;
         ctx.save();
-        ctx.font = "700 15px 'Fraunces', serif";
+        ctx.font = "700 15px 'Roboto', sans-serif";
+        var wR = ctx.measureText(riseTxt).width, wS = ctx.measureText(setTxt).width;
+        var boxW = padX * 2 + wR + gap + wS, boxH = 28;
+
+        // Right of the today line, unless that would run off the chart
+        var boxX = x + 12;
+        if (boxX + boxW > area.right) boxX = x - 12 - boxW;
+        var boxY = yMid - boxH / 2;
+
+        ctx.fillStyle = "rgba(13,14,31,0.85)";
+        ctx.strokeStyle = "rgba(255,255,255,0.18)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, 8); else ctx.rect(boxX, boxY, boxW, boxH);
+        ctx.fill(); ctx.stroke();
+
         ctx.textBaseline = "middle";
-        ctx.textAlign = leftSide ? "right" : "left";
-        var off = leftSide ? -10 : 10;
+        ctx.textAlign = "left";
         ctx.fillStyle = SUNRISE_COLOR;
-        ctx.fillText(hhmm(today.riseH), x + off, yR);
+        ctx.fillText(riseTxt, boxX + padX, yMid + 1);
         ctx.fillStyle = SUNSET_COLOR;
-        ctx.fillText(hhmm(today.setH), x + off, yS);
+        ctx.fillText(setTxt, boxX + padX + wR + gap, yMid + 1);
+
         ctx.fillStyle = "#ffffff";
-        ctx.font = "700 13px 'Fraunces', serif";
+        ctx.font = "700 13px 'Roboto', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
         ctx.fillText("Today", x, Math.min(yS, yR) - 10);
@@ -631,7 +646,7 @@
 
     function renderChart() {
       var data = state.data;
-      el("chart-title").textContent = "London sunrise & sunset " + data.year;
+      el("chart-title").textContent = "London sunrise & sunset · " + data.label;
 
       if (chart) {
         chart.data.datasets = datasetsFor(data);
@@ -661,8 +676,8 @@
               ticks: {
                 color: "#A9A6C4", font: { weight: "600" }, autoSkip: false, maxRotation: 0,
                 callback: function (v) {
-                  var m = state.data.monthStarts.indexOf(v);
-                  return m >= 0 ? MONTHS[m] : "";
+                  var d = state.data.days[v];
+                  return d ? MONTHS[d.date.getUTCMonth()] : "";
                 }
               }
             },
@@ -681,13 +696,13 @@
             tooltip: {
               backgroundColor: "rgba(11,13,99,0.95)",
               borderColor: "rgba(255,255,255,0.15)", borderWidth: 1,
-              titleFont: { family: "Fraunces, serif", weight: "700" },
+              titleFont: { family: "Roboto, sans-serif", weight: "700" },
               filter: function (item) { return item.datasetIndex < 2; },
               callbacks: {
                 title: function (items) {
                   if (!items.length) return "";
-                  var i = Math.round(items[0].parsed.x);
-                  return shortDate(state.data.year, i) + " (" + state.data.days[i].tz + ")";
+                  var d = state.data.days[Math.round(items[0].parsed.x)];
+                  return d ? shortDate(d.date) + " " + d.date.getUTCFullYear() + " (" + d.tz + ")" : "";
                 },
                 label: function (item) { return item.dataset.label + ": " + hhmm(item.parsed.y); }
               }
@@ -767,13 +782,13 @@
       el("light-pct").textContent = Math.round(pct) + "%";
       el("light-pct").style.color = pct < 50 ? "#F0DB6C" : "#8D85FF";
 
-      el("light-left").textContent = "☀ " + shortDate(data.year, maxI) + " · " + durationText(maxL, false);
-      el("light-right").textContent = "☾ " + shortDate(data.year, minI) + " · " + durationText(minL, false);
+      el("light-left").textContent = "☀ Sunset " + hhmm(data.days[maxI].setH) + " · " + durationText(maxL, false);
+      el("light-right").textContent = "☾ Sunset " + hhmm(data.days[minI].setH) + " · " + durationText(minL, false);
 
       var target = shortening ? minI : maxI;
       var daysTo = target - idx;
       if (daysTo < 0) {
-        // Turning point already passed this calendar year: count to next year's solstice
+        // Turning point already passed within this graph window: count a year on
         daysTo += data.days.length;
       }
       if (idx === maxI) el("light-mid").textContent = "Today is the longest day";
@@ -787,10 +802,12 @@
     function refresh() {
       renderProgress();
       var p = london(new Date());
-      var key = p.y + "-" + p.m + "-" + p.d;
+      var win = windowFor(p);
+      var key = p.y + "-" + p.m + "-" + p.d + "|" + p.tz;
       if (key !== state.todayKey) {
-        if (!state.data || state.data.year !== p.y) state.data = buildYear(p.y);
-        state.todayIdx = dayIndex(p.y, p.m, p.d);
+        // Rebuild when the window changes (clocks changing, or a new year/July)
+        if (!state.data || state.data.key !== win.y + "-" + win.m) state.data = buildRange(win);
+        state.todayIdx = Math.round((Date.UTC(p.y, p.m - 1, p.d) - state.data.startMs) / dayMs);
         state.todayKey = key;
       }
       renderLight();
@@ -800,6 +817,10 @@
 
     function init() {
       refresh();
+      // Canvas text can't use a web font until it has loaded, so redraw once it has
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.load("700 15px 'Roboto'").then(function () { if (chart) chart.update("none"); });
+      }
       setInterval(refresh, 30000);
       document.addEventListener("visibilitychange", function () {
         if (!document.hidden) refresh();
