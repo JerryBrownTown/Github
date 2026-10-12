@@ -158,6 +158,34 @@
     }
     .filter-btn[aria-pressed="true"] .swatch { box-shadow: 0 0 0 1.5px #ffffff; }
 
+    /* Activity calendar */
+    .cal-legend {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.25rem;
+      margin: 0 0 1.25rem; font-size: 0.95rem; font-weight: 600;
+    }
+    .cal-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+    .cal-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+    .cal-wrap { display: flex; gap: 6px; }
+    .cal-daynames {
+      flex: none; display: flex; flex-direction: column; gap: 3px;
+      font-size: 11px; font-weight: 600; color: var(--dark-grey);
+    }
+    .cal-daynames span { height: 16px; line-height: 16px; }
+    .cal-daynames span:first-child { height: 18px; }
+    .cal-scroll { flex: 1; min-width: 0; overflow-x: auto; padding-bottom: 10px; }
+    .cal-scroll:focus-visible { outline: 3px solid var(--dark-blue); outline-offset: 2px; }
+    .cal-grid { display: flex; gap: 3px; width: max-content; }
+    .cal-week { display: flex; flex-direction: column; gap: 3px; }
+    .cal-week.new-year { margin-left: 8px; }
+    .cal-month {
+      height: 18px; width: 16px; overflow: visible; white-space: nowrap;
+      font-size: 11px; font-weight: 600; color: var(--dark-grey);
+    }
+    .cal-month.year { font-weight: 800; color: var(--dark-blue); }
+    .cal-day { width: 16px; height: 16px; border-radius: 3px; background: #ffffff; }
+    .cal-day.blank { background: transparent; }
+    .cal-day.today { box-shadow: 0 0 0 2px var(--dark-blue); }
+
     .updated {
       margin: 0;
       padding: 0 2rem 1rem;
@@ -314,6 +342,29 @@
           <div class="filters" role="group" aria-label="Years" id="bio-years"></div>
         </div>
         <div class="chart-box tall"><canvas id="chart-13"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Activity calendar, light grey -->
+  <section class="section bg-light-grey" id="calendar">
+    <div class="inner">
+      <h2 class="big-title with-sub">Calendar</h2>
+      <p class="chart-sub">days exercised</p>
+      <div class="chart-error" data-sheet="Record"></div>
+      <div class="cal-legend" aria-hidden="true">
+        <span><i style="background:#2E9E5B"></i>Run</span>
+        <span><i style="background:#2F6FD1"></i>Swim</span>
+        <span><i style="background:#D64545"></i>Gym</span>
+        <span><i style="background:linear-gradient(135deg,#2E9E5B 50%,#2F6FD1 50%)"></i>Multiple</span>
+      </div>
+      <div class="cal-wrap">
+        <div class="cal-daynames" aria-hidden="true">
+          <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span>
+        </div>
+        <div class="cal-scroll" id="cal-scroll" tabindex="0" aria-label="Exercise calendar, scroll left to go back in time">
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1184,6 +1235,92 @@
       });
     });
 
+    /* ---------------- Record tab: activity calendar ---------------- */
+
+    // Record!B = date, C = workouts (gym), D = runs, E = swims
+    var CAL_TYPES = [
+      { col: COL.D, name: "Run",  color: COLORS.run },
+      { col: COL.E, name: "Swim", color: COLORS.swim },
+      { col: COL.C, name: "Gym",  color: COLORS.workout }
+    ];
+    var DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    var calRendered = false;
+
+    // A cell counts as "done" if it has anything in it other than 0 / FALSE / no
+    function isDone(raw) {
+      var s = String(raw === undefined || raw === null ? "" : raw).trim().toLowerCase();
+      if (!s || s === "false" || s === "no" || s === "n" || s === "-") return false;
+      var n = num(s);
+      return n === null ? true : n !== 0;
+    }
+
+    function buildActivity(rows) {
+      var today = todayUTC();
+      var map = {}, first = null;
+      for (var r = 2; r <= rows.length; r++) {
+        var row = rows[r - 1] || [];
+        var d = parseDate(row[COL.B]);
+        if (!d || d > today) continue;
+        var done = CAL_TYPES.filter(function (t) { return isDone(row[t.col]); });
+        if (!done.length) continue;
+        map[d.getTime()] = done;
+        if (!first || d < first) first = d;
+      }
+      return { map: map, first: first };
+    }
+
+    function cellBackground(done) {
+      if (done.length === 1) return done[0].color;
+      if (done.length === 2) return "linear-gradient(135deg," + done[0].color + " 50%," + done[1].color + " 50%)";
+      return "linear-gradient(90deg," + done[0].color + " 33.34%," + done[1].color + " 33.34% 66.67%," + done[2].color + " 66.67%)";
+    }
+
+    function renderCalendar(act) {
+      var today = todayUTC();
+      var startRef = act.first || today;
+      var start = new Date(startRef.getTime() - ((startRef.getUTCDay() + 6) % 7) * DAY_MS); // Monday
+      var html = [], prevYear = null;
+
+      for (var ws = start.getTime(); ws <= today.getTime(); ws += 7 * DAY_MS) {
+        var weekStart = new Date(ws);
+        // Month label on the week a month starts in (and on the very first week)
+        var label = "", isYear = false, lm = null;
+        for (var i = 0; i < 7; i++) {
+          var dd = new Date(ws + i * DAY_MS);
+          if (dd.getUTCDate() === 1 && dd >= startRef) { lm = dd; break; }
+        }
+        if (!lm && ws === start.getTime()) lm = startRef; // first column: label by the first day shown
+        if (lm) {
+          label = MONTHS[lm.getUTCMonth()];
+          if (lm.getUTCMonth() === 0 || ws === start.getTime()) { label += " " + lm.getUTCFullYear(); isYear = true; }
+        }
+        var yearHere = new Date(ws + 6 * DAY_MS).getUTCFullYear();
+        var cls = "cal-week" + (prevYear !== null && yearHere !== prevYear ? " new-year" : "");
+        prevYear = yearHere;
+
+        html.push('<div class="' + cls + '"><div class="cal-month' + (isYear ? " year" : "") + '">' + label + '</div>');
+        for (var j = 0; j < 7; j++) {
+          var t = ws + j * DAY_MS;
+          if (t > today.getTime() || t < startRef.getTime()) { html.push('<div class="cal-day blank"></div>'); continue; }
+          var d = new Date(t);
+          var done = act.map[t] || [];
+          var tip = DAY_NAMES[d.getUTCDay()] + " " + d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear() +
+                    ": " + (done.length ? done.map(function (x) { return x.name; }).join(" + ") : "rest day");
+          var style = done.length ? ' style="background:' + cellBackground(done) + '"' : "";
+          html.push('<div class="cal-day' + (t === today.getTime() ? " today" : "") + '" title="' + tip + '"' + style + '></div>');
+        }
+        html.push('</div>');
+      }
+
+      var scroller = document.getElementById("cal-scroll");
+      var atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 24;
+      var keep = scroller.scrollLeft;
+      document.getElementById("cal-grid").innerHTML = html.join("");
+      // Open at the present; on refresh keep the user's place unless they were already at the end
+      scroller.scrollLeft = (!calRendered || atEnd) ? scroller.scrollWidth : keep;
+      calRendered = true;
+    }
+
     /* ---------------- loading ---------------- */
 
     function loadAll() {
@@ -1195,6 +1332,7 @@
       var record = fetchSheet("Record")
         .then(function (rows) {
           showError("Record", "");
+          renderCalendar(buildActivity(rows));
           var days = buildDays(rows);
           if (!days.length) throw new Error("any days from the Record tab. Check the Record gid points at the right tab and that column B from row 367 holds dates.");
           bioDays = days;
