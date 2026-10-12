@@ -169,7 +169,65 @@
     .error { display: none; color: #ffb4a8; font-weight: 600; font-size: 13px; padding: 4px 4px 10px; }
     .footnote { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 12px; }
 
+    /* BST / GMT progress bar */
+    .progress-wrap {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 10px;
+      padding: 18px 20px 14px;
+    }
+    .progress-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .progress-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; }
+    .progress-pct { font-family: 'Shrikhand', cursive; font-size: 2rem; line-height: 1; color: var(--accent, #6CF0A6); }
+    .progress-track {
+      position: relative; height: 22px; border-radius: 11px; overflow: hidden;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--panel-edge);
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      border-radius: 11px;
+      background: var(--accent, #6CF0A6);
+      background-image: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 100%);
+      box-shadow: 0 0 14px var(--accent, #6CF0A6);
+      transition: width 1.2s cubic-bezier(.22,1,.36,1);
+    }
+    .progress-foot {
+      display: flex; justify-content: space-between; gap: 10px;
+      margin-top: 10px; font-size: 0.85rem; color: var(--muted);
+    }
+    .progress-foot span:nth-child(2) { text-align: center; color: var(--text); font-weight: 600; }
+    .progress-foot span:last-child { text-align: right; }
+    @media (prefers-reduced-motion: reduce) { .progress-fill { transition: none; } }
+
+    /* Peak daylight -> peak darkness bar */
+    .light-wrap { margin-top: 14px; }
+    .light-pct { color: #F0DB6C; }
+    .light-track {
+      position: relative; height: 22px; border-radius: 11px;
+      background: linear-gradient(90deg, #F0DB6C 0%, #F08E80 45%, #3A2F7A 80%, #07081A 100%);
+      border: 1px solid var(--panel-edge);
+    }
+    .light-marker {
+      position: absolute; top: 50%; left: 0%;
+      width: 30px; height: 30px; margin-left: -15px; margin-top: -15px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3px solid var(--panel);
+      box-shadow: 0 0 0 2px #ffffff, 0 0 16px rgba(255,255,255,0.6);
+      display: flex; align-items: center; justify-content: center;
+      transition: left 1.2s cubic-bezier(.22,1,.36,1);
+    }
+    .light-arrow { font-size: 14px; font-weight: 800; line-height: 1; color: var(--panel); }
+    @media (prefers-reduced-motion: reduce) { .light-marker { transition: none; } }
+
     @media (max-width: 768px) {
+      .progress-wrap { padding: 14px 14px 12px; }
+      .progress-title { font-size: 17px; }
+      .progress-pct { font-size: 1.6rem; }
       .topbar, .footer { padding: 0.75rem 1rem; }
       .brand { font-size: 2rem; }
       .section { padding: 2rem 1rem; }
@@ -219,8 +277,65 @@
   })();
   </script>
 
+  <!-- BST / GMT progress -->
+  <section class="section" id="clock-progress">
+    <div class="block">
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <div class="progress-title" id="progress-title">&nbsp;</div>
+          <div class="progress-pct" id="progress-pct">–</div>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-foot">
+          <span id="progress-start">&nbsp;</span>
+          <span id="progress-left">&nbsp;</span>
+          <span id="progress-end">&nbsp;</span>
+        </div>
+      </div>
+
+      <div class="progress-wrap light-wrap">
+        <div class="progress-head">
+          <div class="progress-title" id="light-title">Peak daylight to peak darkness</div>
+          <div class="progress-pct light-pct" id="light-pct">–</div>
+        </div>
+        <div class="light-track" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="light-track">
+          <div class="light-marker" id="light-marker"><span class="light-arrow" id="light-arrow"></span></div>
+        </div>
+        <div class="progress-foot">
+          <span id="light-left">&nbsp;</span>
+          <span id="light-mid">&nbsp;</span>
+          <span id="light-right">&nbsp;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Year -->
+  <section class="section" id="year" style="padding-top:1rem;">
+    <h2 class="section-title">The Year</h2>
+    <div class="block">
+      <div class="chart-wrap">
+        <div class="chart-head">
+          <div class="chart-title" id="chart-title">London sunrise &amp; sunset</div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--sunrise)"></i>Sunrise</span>
+            <span><i class="sw" style="background:var(--sunset)"></i>Sunset</span>
+            <span><i class="sw" style="background:#ffffff"></i>Today</span>
+            <span><i class="sw sw-box" style="background:rgba(108,240,166,0.18); border:1px solid rgba(108,240,166,0.5)"></i>BST</span>
+          </div>
+        </div>
+        <div class="error" id="chart-error"></div>
+        <div class="chart-box"><canvas id="daylight-canvas"></canvas></div>
+      </div>
+      <p class="footnote">Times are London clock time (GMT in winter, BST in summer), calculated in your browser for 51.51°N, 0.13°W.</p>
+    </div>
+  </section>
+
+
   <!-- Today -->
-  <section class="section" id="today">
+  <section class="section" id="today" style="padding-top:1rem;">
     <h2 class="section-title">Today</h2>
     <div class="block">
       <p class="today-date" id="today-date">&nbsp;</p>
@@ -247,27 +362,6 @@
           <div class="stat-note" id="stat-clock-note">&nbsp;</div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- The Year -->
-  <section class="section" id="year" style="padding-top:1rem;">
-    <h2 class="section-title">The Year</h2>
-    <div class="block">
-      <div class="chart-wrap">
-        <div class="chart-head">
-          <div class="chart-title" id="chart-title">London sunrise &amp; sunset</div>
-          <div class="legend">
-            <span><i class="sw" style="background:var(--sunrise)"></i>Sunrise</span>
-            <span><i class="sw" style="background:var(--sunset)"></i>Sunset</span>
-            <span><i class="sw" style="background:#ffffff"></i>Today</span>
-            <span><i class="sw sw-box" style="background:rgba(108,240,166,0.18); border:1px solid rgba(108,240,166,0.5)"></i>BST</span>
-          </div>
-        </div>
-        <div class="error" id="chart-error"></div>
-        <div class="chart-box"><canvas id="daylight-canvas"></canvas></div>
-      </div>
-      <p class="footnote">Times are London clock time (GMT in winter, BST in summer), calculated in your browser for 51.51°N, 0.13°W.</p>
     </div>
   </section>
 
@@ -604,8 +698,94 @@
       });
     }
 
+    // ---------- BST / GMT progress bar ----------
+    // UK rule: clocks change at 01:00 UTC on the last Sunday of March (forward) and October (back)
+    function lastSundayUTC(year, monthIndex) {
+      var d = new Date(Date.UTC(year, monthIndex + 1, 0, 1)); // last day of month, 01:00 UTC
+      d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+      return d;
+    }
+    var periodDateFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, day: "numeric", month: "short", year: "numeric" });
+
+    function currentPeriod(now) {
+      var y = now.getUTCFullYear(), changes = [];
+      for (var yr = y - 1; yr <= y + 1; yr++) {
+        changes.push({ t: lastSundayUTC(yr, 2), to: "BST" });
+        changes.push({ t: lastSundayUTC(yr, 9), to: "GMT" });
+      }
+      for (var i = 0; i < changes.length - 1; i++) {
+        if (changes[i].t <= now && now < changes[i + 1].t) {
+          return { type: changes[i].to, start: changes[i].t, end: changes[i + 1].t };
+        }
+      }
+      return null;
+    }
+
+    function renderProgress() {
+      var now = new Date(), p = currentPeriod(now);
+      if (!p) return;
+      var frac = Math.min(1, Math.max(0, (now - p.start) / (p.end - p.start)));
+      var pct = frac * 100;
+      var isBST = p.type === "BST";
+      var accent = isBST ? "#6CF0A6" : "#8D85FF";
+      var wrap = el("clock-progress");
+      wrap.style.setProperty("--accent", accent);
+
+      el("progress-title").textContent = isBST
+        ? "How far through British Summer Time"
+        : "How far through GMT (winter time)";
+      el("progress-pct").textContent = (pct < 10 ? pct.toFixed(1) : Math.floor(pct)) + "%";
+      el("progress-fill").style.width = pct.toFixed(2) + "%";
+      el("progress-track").setAttribute("aria-valuenow", pct.toFixed(1));
+
+      var daysLeft = Math.ceil((p.end - now) / dayMs);
+      el("progress-start").textContent = (isBST ? "Started " : "Began ") + periodDateFmt.format(p.start);
+      el("progress-left").textContent = daysLeft + (daysLeft === 1 ? " day" : " days") +
+        (isBST ? " until clocks go back" : " until clocks go forward");
+      el("progress-end").textContent = "Ends " + periodDateFmt.format(p.end);
+    }
+
+    // ---------- Peak daylight -> peak darkness bar ----------
+    function renderLight() {
+      var data = state.data, idx = state.todayIdx;
+      var lens = data.days.map(function (d) { return d.set - d.rise; });
+      var maxI = 0, minI = 0;
+      lens.forEach(function (l, i) { if (l > lens[maxI]) maxI = i; if (l < lens[minI]) minI = i; });
+      var maxL = lens[maxI], minL = lens[minI], todayL = lens[idx];
+
+      // 0% = longest day (peak daylight), 100% = shortest day (peak darkness)
+      var pct = Math.min(100, Math.max(0, (maxL - todayL) / (maxL - minL) * 100));
+
+      // Direction: are days getting shorter (moving right) or longer (moving left)?
+      var prevL = idx > 0 ? lens[idx - 1] : todayL;
+      var nextL = idx + 1 < lens.length ? lens[idx + 1] : todayL;
+      var shortening = nextL < todayL || (nextL === todayL && todayL < prevL);
+
+      el("light-marker").style.left = pct.toFixed(2) + "%";
+      el("light-arrow").textContent = shortening ? "→" : "←";
+      el("light-track").setAttribute("aria-valuenow", pct.toFixed(1));
+      el("light-pct").textContent = Math.round(pct) + "%";
+      el("light-pct").style.color = pct < 50 ? "#F0DB6C" : "#8D85FF";
+
+      el("light-left").textContent = "☀ " + shortDate(data.year, maxI) + " · " + durationText(maxL, false);
+      el("light-right").textContent = "☾ " + shortDate(data.year, minI) + " · " + durationText(minL, false);
+
+      var target = shortening ? minI : maxI;
+      var daysTo = target - idx;
+      if (daysTo < 0) {
+        // Turning point already passed this calendar year: count to next year's solstice
+        daysTo += data.days.length;
+      }
+      if (idx === maxI) el("light-mid").textContent = "Today is the longest day";
+      else if (idx === minI) el("light-mid").textContent = "Today is the shortest day";
+      else el("light-mid").textContent = shortening
+        ? "Getting darker · " + daysTo + " days to the shortest day"
+        : "Getting lighter · " + daysTo + " days to the longest day";
+    }
+
     // ---------- Live refresh ----------
     function refresh() {
+      renderProgress();
       var p = london(new Date());
       var key = p.y + "-" + p.m + "-" + p.d;
       if (key !== state.todayKey) {
@@ -613,6 +793,7 @@
         state.todayIdx = dayIndex(p.y, p.m, p.d);
         state.todayKey = key;
       }
+      renderLight();
       renderToday();
       if (window.Chart) renderChart();
     }
