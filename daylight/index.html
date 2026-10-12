@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daylight Hours</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Shrikhand&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0D0E1F;
+      --panel: #16183A;
+      --panel-edge: rgba(255,255,255,0.08);
+      --text: #F3EAF0;
+      --muted: #A9A6C4;
+      --pink: #F08E80;
+      --sunrise: #F0DB6C;
+      --sunset: #F08E80;
+      --blue: #0B0D63;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, Helvetica, Arial, sans-serif;
+    }
+
+    /* Top bar + footer */
+    .topbar, .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 5rem;
+      padding: 1rem 2rem;
+    }
+    .topbar {
+      background: var(--bg);
+      justify-content: space-between;
+      position: relative;
+      z-index: 20;
+      border-bottom: 1px solid var(--panel-edge);
+    }
+    .footer { background: #07081A; border-top: 1px solid var(--panel-edge); }
+
+    .brand {
+      margin: 0;
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      font-size: 2.5rem;
+      line-height: 1;
+      color: var(--pink);
+    }
+
+    /* Burger menu (page switcher) */
+    .site-menu { position: relative; }
+    .menu-toggle {
+      display: flex; flex-direction: column; justify-content: center; gap: 6px;
+      width: 48px; height: 48px; padding: 10px;
+      background: transparent; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .menu-toggle span {
+      display: block; height: 4px; border-radius: 2px; background: var(--pink);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(10px) rotate(45deg); }
+    .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-10px) rotate(-45deg); }
+    .menu-toggle:focus-visible, .menu-panel a:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+    .menu-panel {
+      position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;
+      margin: 0; padding: 8px; list-style: none;
+      background: var(--blue); border: 1px solid var(--panel-edge);
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .menu-panel[hidden] { display: none; }
+    .menu-panel a {
+      display: block; padding: 10px 14px; border-radius: 6px;
+      font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.15rem;
+      color: #ffffff; text-decoration: none;
+    }
+    .menu-panel a:hover { background: rgba(255,255,255,0.1); }
+    .menu-panel a[aria-current="page"] { color: var(--pink); }
+    @media (prefers-reduced-motion: reduce) { .menu-toggle span { transition: none; } }
+
+    /* Sections */
+    .section { padding: 3rem 2rem; }
+    .section-title {
+      margin: 0 0 2rem;
+      font-family: 'Shrikhand', cursive;
+      font-weight: 400;
+      font-size: 4rem;
+      line-height: 1.1;
+      text-align: center;
+      color: var(--pink);
+    }
+    .block { margin: 0 auto 1.5rem; max-width: 1200px; }
+    .block:last-child { margin-bottom: 0; }
+
+    /* Today stats */
+    .today-date {
+      text-align: center;
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--text);
+      margin: 0 0 0.35rem;
+    }
+    .today-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0 0 1.75rem;
+      min-height: 1.2em;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 10px;
+      padding: 18px 12px 16px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-family: 'Shrikhand', cursive;
+      font-size: 2.6rem;
+      line-height: 1.15;
+      margin-top: 6px;
+    }
+    .stat-note { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+    .c-sunrise { color: var(--sunrise); }
+    .c-sunset  { color: var(--sunset); }
+    .c-length  { color: #8D85FF; }
+    .c-clock   { color: #6CF0A6; }
+
+    /* Chart */
+    .chart-wrap {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 10px;
+      padding: 16px 16px 10px;
+    }
+    .chart-head {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 8px 20px; padding: 0 4px 10px;
+    }
+    .chart-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+    .sw-box { width: 14px; height: 10px; border-radius: 2px; }
+    .chart-box { width: 100%; height: 460px; }
+    .error { display: none; color: #ffb4a8; font-weight: 600; font-size: 13px; padding: 4px 4px 10px; }
+    .footnote { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 12px; }
+
+    @media (max-width: 768px) {
+      .topbar, .footer { padding: 0.75rem 1rem; }
+      .brand { font-size: 2rem; }
+      .section { padding: 2rem 1rem; }
+      .section-title { font-size: 2.6rem; margin-bottom: 1.25rem; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-value { font-size: 2rem; }
+      .chart-wrap { padding: 12px 8px 6px; }
+      .chart-box { height: 360px; }
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <header class="topbar">
+    <h1 class="brand">Daylight Hours</h1>
+    <nav class="site-menu" aria-label="Pages">
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu-panel" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="menu-panel" id="site-menu-panel" hidden>
+        <li><a href="/">Hands</a></li>
+        <li><a href="/fitness">Fitness</a></li>
+        <li><a href="/monopoly">Monopoly</a></li>
+        <li><a href="/daylight" aria-current="page">Daylight</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <script>
+  (function () {
+    var btn = document.querySelector(".menu-toggle");
+    var panel = document.getElementById("site-menu-panel");
+    function setOpen(open) {
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      panel.hidden = !open;
+    }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); setOpen(panel.hidden); });
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !panel.hidden) { setOpen(false); btn.focus(); }
+    });
+  })();
+  </script>
+
+  <!-- Today -->
+  <section class="section" id="today">
+    <h2 class="section-title">Today</h2>
+    <div class="block">
+      <p class="today-date" id="today-date">&nbsp;</p>
+      <p class="today-sub" id="today-sub">&nbsp;</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Sunrise</div>
+          <div class="stat-value c-sunrise" id="stat-rise">–</div>
+          <div class="stat-note" id="stat-rise-note">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Sunset</div>
+          <div class="stat-value c-sunset" id="stat-set">–</div>
+          <div class="stat-note" id="stat-set-note">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Daylight</div>
+          <div class="stat-value c-length" id="stat-length">–</div>
+          <div class="stat-note" id="stat-length-note">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Clocks</div>
+          <div class="stat-value c-clock" id="stat-clock">–</div>
+          <div class="stat-note" id="stat-clock-note">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Year -->
+  <section class="section" id="year" style="padding-top:1rem;">
+    <h2 class="section-title">The Year</h2>
+    <div class="block">
+      <div class="chart-wrap">
+        <div class="chart-head">
+          <div class="chart-title" id="chart-title">London sunrise &amp; sunset</div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--sunrise)"></i>Sunrise</span>
+            <span><i class="sw" style="background:var(--sunset)"></i>Sunset</span>
+            <span><i class="sw" style="background:#ffffff"></i>Today</span>
+            <span><i class="sw sw-box" style="background:rgba(108,240,166,0.18); border:1px solid rgba(108,240,166,0.5)"></i>BST</span>
+          </div>
+        </div>
+        <div class="error" id="chart-error"></div>
+        <div class="chart-box"><canvas id="daylight-canvas"></canvas></div>
+      </div>
+      <p class="footnote">Times are London clock time (GMT in winter, BST in summer), calculated in your browser for 51.51°N, 0.13°W.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="brand">Daylight Hours</div>
+  </footer>
+
+  <script>
+  (function () {
+    var CHART_JS_URLS = [
+      "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js",
+      "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+    ];
+
+    var LAT = 51.5074, LNG = -0.1278, TZ = "Europe/London";
+    var SUNRISE_COLOR = "#F0DB6C", SUNSET_COLOR = "#F08E80";
+    var BST_FILL = "rgba(108,240,166,0.07)", BST_TEXT = "rgba(108,240,166,0.75)";
+    var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // ---------- Solar position (standard NOAA / Meeus-style approximation) ----------
+    var rad = Math.PI / 180, dayMs = 864e5, J1970 = 2440588, J2000 = 2451545, J0 = 0.0009;
+    var e = rad * 23.4397;
+
+    function toDays(date) { return date.valueOf() / dayMs - 0.5 + J1970 - J2000; }
+    function fromJulian(j) { return new Date((j + 0.5 - J1970) * dayMs); }
+    function declination(l) { return Math.asin(Math.sin(e) * Math.sin(l)); }
+    function solarMeanAnomaly(d) { return rad * (357.5291 + 0.98560028 * d); }
+    function eclipticLongitude(M) {
+      var C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+      return M + C + rad * 102.9372 + Math.PI;
+    }
+    function approxTransit(Ht, lw, n) { return J0 + (Ht + lw) / (2 * Math.PI) + n; }
+    function solarTransitJ(ds, M, L) { return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L); }
+    function hourAngle(h, phi, d) {
+      return Math.acos((Math.sin(h) - Math.sin(phi) * Math.sin(d)) / (Math.cos(phi) * Math.cos(d)));
+    }
+
+    // Sunrise / sunset (sun's upper limb at the horizon, with refraction: -0.833°)
+    function sunTimes(date, lat, lng) {
+      var lw = rad * -lng, phi = rad * lat;
+      var d = toDays(date);
+      var n = Math.round(d - J0 - lw / (2 * Math.PI));
+      var ds = approxTransit(0, lw, n);
+      var M = solarMeanAnomaly(ds);
+      var L = eclipticLongitude(M);
+      var dec = declination(L);
+      var Jnoon = solarTransitJ(ds, M, L);
+      var w = hourAngle(-0.833 * rad, phi, dec);
+      var Jset = solarTransitJ(approxTransit(w, lw, n), M, L);
+      var Jrise = Jnoon - (Jset - Jnoon);
+      return { rise: fromJulian(Jrise), set: fromJulian(Jset) };
+    }
+
+    // ---------- London clock-time helpers (handles GMT/BST automatically) ----------
+    var partsFmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hourCycle: "h23", timeZoneName: "short"
+    });
+    var longDateFmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: TZ, weekday: "long", day: "numeric", month: "long", year: "numeric"
+    });
+
+    function london(date) {
+      var o = {};
+      partsFmt.formatToParts(date).forEach(function (p) { o[p.type] = p.value; });
+      return {
+        y: +o.year, m: +o.month, d: +o.day,
+        h: +o.hour % 24, min: +o.minute, s: +o.second,
+        tz: o.timeZoneName === "BST" ? "BST" : "GMT"
+      };
+    }
+    function hoursOf(p) { return p.h + p.min / 60 + p.s / 3600; }
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    function hhmm(decimalHours) {
+      var total = Math.round(decimalHours * 60);
+      return pad(Math.floor(total / 60) % 24) + ":" + pad(total % 60);
+    }
+    function durationText(ms, withSeconds) {
+      var totalSec = Math.round(Math.abs(ms) / 1000);
+      var h = Math.floor(totalSec / 3600), m = Math.floor((totalSec % 3600) / 60), s = totalSec % 60;
+      if (withSeconds) return (h ? h + "h " : "") + m + "m " + s + "s";
+      return h + "h " + pad(m) + "m";
+    }
+    function dayIndex(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / dayMs); }
+    function shortDate(year, i) {
+      var dt = new Date(Date.UTC(year, 0, 1 + i));
+      return dt.getUTCDate() + " " + MONTHS[dt.getUTCMonth()];
+    }
+
+    // ---------- Build a whole year of data ----------
+    function buildYear(year) {
+      var leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+      var count = leap ? 366 : 365;
+      var days = [];
+      for (var i = 0; i < count; i++) {
+        var noon = new Date(Date.UTC(year, 0, 1 + i, 12));
+        var t = sunTimes(noon, LAT, LNG);
+        var r = london(t.rise), s = london(t.set);
+        days.push({
+          i: i,
+          rise: t.rise, set: t.set,
+          riseH: hoursOf(r), setH: hoursOf(s),
+          tz: london(noon).tz
+        });
+      }
+      var bstStart = -1, bstEnd = -1;
+      days.forEach(function (d) {
+        if (d.tz === "BST") { if (bstStart < 0) bstStart = d.i; bstEnd = d.i; }
+      });
+      var monthStarts = [];
+      for (var m = 0; m < 12; m++) monthStarts.push(dayIndex(year, m + 1, 1));
+      return { year: year, days: days, bstStart: bstStart, bstEnd: bstEnd, monthStarts: monthStarts };
+    }
+
+    // Next clock change after the given day (looks into next year if needed)
+    function nextClockChange(data, todayIdx) {
+      for (var i = todayIdx + 1; i < data.days.length; i++) {
+        if (data.days[i].tz !== data.days[i - 1].tz) {
+          return { year: data.year, i: i, to: data.days[i].tz };
+        }
+      }
+      var next = buildYear(data.year + 1);
+      if (next.days[0].tz !== data.days[data.days.length - 1].tz) return { year: next.year, i: 0, to: next.days[0].tz };
+      for (var j = 1; j < next.days.length; j++) {
+        if (next.days[j].tz !== next.days[j - 1].tz) return { year: next.year, i: j, to: next.days[j].tz };
+      }
+      return null;
+    }
+
+    // ---------- State ----------
+    var state = { data: null, todayIdx: -1, todayKey: "" };
+    var chart = null;
+
+    function el(id) { return document.getElementById(id); }
+    function showError(msg) { var x = el("chart-error"); x.textContent = msg; x.style.display = msg ? "block" : "none"; }
+
+    // ---------- Today panel ----------
+    function renderToday() {
+      var data = state.data, idx = state.todayIdx, today = data.days[idx];
+      var now = new Date(), nowP = london(now);
+
+      el("today-date").textContent = longDateFmt.format(now);
+
+      el("stat-rise").textContent = hhmm(today.riseH);
+      el("stat-set").textContent = hhmm(today.setH);
+      el("stat-rise-note").textContent = today.tz;
+      el("stat-set-note").textContent = today.tz;
+
+      var lenMs = today.set - today.rise;
+      el("stat-length").textContent = durationText(lenMs, false);
+      var prev = idx > 0 ? data.days[idx - 1] : (function () {
+        var b = buildYear(data.year - 1); return b.days[b.days.length - 1];
+      })();
+      var diff = lenMs - (prev.set - prev.rise);
+      el("stat-length-note").textContent = (diff >= 0 ? "+" : "−") + durationText(diff, true) + " vs yesterday";
+
+      el("stat-clock").textContent = nowP.tz;
+      var change = nextClockChange(data, idx);
+      if (change) {
+        var verb = change.to === "GMT" ? "Clocks go back" : "Clocks go forward";
+        el("stat-clock-note").textContent = verb + " " + shortDate(change.year, change.i) +
+          (change.year !== data.year ? " " + change.year : "");
+      } else {
+        el("stat-clock-note").textContent = "";
+      }
+
+      // Live countdown line
+      var sub;
+      if (now < today.rise) sub = "Sunrise in " + durationText(today.rise - now, false).replace(/^0h /, "");
+      else if (now < today.set) sub = "Sunset in " + durationText(today.set - now, false).replace(/^0h /, "");
+      else {
+        var tomorrow = idx + 1 < data.days.length ? data.days[idx + 1].rise
+          : sunTimes(new Date(Date.UTC(data.year + 1, 0, 1, 12)), LAT, LNG).rise;
+        sub = "The sun has set · sunrise in " + durationText(tomorrow - now, false).replace(/^0h /, "");
+      }
+      el("today-sub").textContent = sub;
+    }
+
+    // ---------- Chart ----------
+    var bstPlugin = {
+      id: "bstBand",
+      beforeDatasetsDraw: function (c) {
+        var d = state.data;
+        if (!d || d.bstStart < 0) return;
+        var x = c.scales.x, area = c.chartArea, ctx = c.ctx;
+        var x1 = x.getPixelForValue(d.bstStart - 0.5), x2 = x.getPixelForValue(d.bstEnd + 0.5);
+        ctx.save();
+        ctx.fillStyle = BST_FILL;
+        ctx.fillRect(x1, area.top, x2 - x1, area.bottom - area.top);
+        ctx.fillStyle = BST_TEXT;
+        ctx.font = "700 12px 'Fraunces', serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText("BST", (x1 + x2) / 2, area.top + 6);
+        ctx.restore();
+      }
+    };
+
+    // Labels next to today's line: sunrise time, sunset time, and "Today"
+    var todayLabelPlugin = {
+      id: "todayLabels",
+      afterDatasetsDraw: function (c) {
+        var d = state.data;
+        if (!d) return;
+        var today = d.days[state.todayIdx];
+        var x = c.scales.x.getPixelForValue(state.todayIdx);
+        var yR = c.scales.y.getPixelForValue(today.riseH);
+        var yS = c.scales.y.getPixelForValue(today.setH);
+        var area = c.chartArea, ctx = c.ctx;
+        var leftSide = x > area.left + (area.right - area.left) * 0.8;
+        ctx.save();
+        ctx.font = "700 15px 'Fraunces', serif";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = leftSide ? "right" : "left";
+        var off = leftSide ? -10 : 10;
+        ctx.fillStyle = SUNRISE_COLOR;
+        ctx.fillText(hhmm(today.riseH), x + off, yR);
+        ctx.fillStyle = SUNSET_COLOR;
+        ctx.fillText(hhmm(today.setH), x + off, yS);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 13px 'Fraunces', serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("Today", x, Math.min(yS, yR) - 10);
+        ctx.restore();
+      }
+    };
+
+    function datasetsFor(data) {
+      var today = data.days[state.todayIdx];
+      var nowH = hoursOf(london(new Date()));
+      var nowPoints = (nowH >= today.riseH && nowH <= today.setH) ? [{ x: state.todayIdx, y: nowH }] : [];
+      return [
+        {
+          label: "Sunrise",
+          data: data.days.map(function (d) { return { x: d.i, y: d.riseH }; }),
+          borderColor: SUNRISE_COLOR, backgroundColor: SUNRISE_COLOR,
+          borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4, tension: 0, fill: false, order: 3
+        },
+        {
+          label: "Sunset",
+          data: data.days.map(function (d) { return { x: d.i, y: d.setH }; }),
+          borderColor: SUNSET_COLOR, backgroundColor: "rgba(240,180,120,0.10)",
+          pointBackgroundColor: SUNSET_COLOR,
+          borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4, tension: 0, fill: "-1", order: 3
+        },
+        {
+          label: "Today",
+          data: [{ x: state.todayIdx, y: today.riseH }, { x: state.todayIdx, y: today.setH }],
+          borderColor: "#ffffff", borderWidth: 2,
+          pointRadius: 5, pointHoverRadius: 6,
+          pointBackgroundColor: [SUNRISE_COLOR, SUNSET_COLOR],
+          pointBorderColor: "#ffffff", pointBorderWidth: 2,
+          fill: false, order: 1
+        },
+        {
+          label: "Now",
+          data: nowPoints,
+          showLine: false,
+          pointRadius: 6, pointHoverRadius: 7, pointStyle: "circle",
+          pointBackgroundColor: "#ffffff", pointBorderColor: "rgba(255,255,255,0.35)", pointBorderWidth: 6,
+          order: 0
+        }
+      ];
+    }
+
+    function renderChart() {
+      var data = state.data;
+      el("chart-title").textContent = "London sunrise & sunset " + data.year;
+
+      if (chart) {
+        chart.data.datasets = datasetsFor(data);
+        chart.options.scales.x.max = data.days.length - 1;
+        chart.update("none");
+        return;
+      }
+
+      var ctx = el("daylight-canvas").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: { datasets: datasetsFor(data) },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          parsing: false,
+          layout: { padding: { top: 8, right: 12, bottom: 4, left: 4 } },
+          interaction: { mode: "nearest", axis: "x", intersect: false },
+          scales: {
+            x: {
+              type: "linear", min: 0, max: data.days.length - 1,
+              grid: { color: "rgba(255,255,255,0.06)" },
+              border: { color: "rgba(255,255,255,0.2)" },
+              afterBuildTicks: function (scale) {
+                scale.ticks = state.data.monthStarts.map(function (v) { return { value: v }; });
+              },
+              ticks: {
+                color: "#A9A6C4", font: { weight: "600" }, autoSkip: false, maxRotation: 0,
+                callback: function (v) {
+                  var m = state.data.monthStarts.indexOf(v);
+                  return m >= 0 ? MONTHS[m] : "";
+                }
+              }
+            },
+            y: {
+              min: 3, max: 23,
+              grid: { color: "rgba(255,255,255,0.08)" },
+              border: { color: "rgba(255,255,255,0.2)" },
+              ticks: {
+                stepSize: 2, color: "#A9A6C4", font: { weight: "600" },
+                callback: function (v) { return pad(v) + ":00"; }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(11,13,99,0.95)",
+              borderColor: "rgba(255,255,255,0.15)", borderWidth: 1,
+              titleFont: { family: "Fraunces, serif", weight: "700" },
+              filter: function (item) { return item.datasetIndex < 2; },
+              callbacks: {
+                title: function (items) {
+                  if (!items.length) return "";
+                  var i = Math.round(items[0].parsed.x);
+                  return shortDate(state.data.year, i) + " (" + state.data.days[i].tz + ")";
+                },
+                label: function (item) { return item.dataset.label + ": " + hhmm(item.parsed.y); }
+              }
+            }
+          }
+        },
+        plugins: [bstPlugin, todayLabelPlugin]
+      });
+    }
+
+    // ---------- Live refresh ----------
+    function refresh() {
+      var p = london(new Date());
+      var key = p.y + "-" + p.m + "-" + p.d;
+      if (key !== state.todayKey) {
+        if (!state.data || state.data.year !== p.y) state.data = buildYear(p.y);
+        state.todayIdx = dayIndex(p.y, p.m, p.d);
+        state.todayKey = key;
+      }
+      renderToday();
+      if (window.Chart) renderChart();
+    }
+
+    function init() {
+      refresh();
+      setInterval(refresh, 30000);
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) refresh();
+      });
+    }
+
+    function loadChartJs(urls, index) {
+      if (index >= urls.length) {
+        showError("Couldn't load the charting library from any source (likely an ad-blocker or network filter blocking script CDNs).");
+        refresh();
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = urls[index];
+      s.onload = init;
+      s.onerror = function () { loadChartJs(urls, index + 1); };
+      document.head.appendChild(s);
+    }
+
+    if (window.Chart) init(); else loadChartJs(CHART_JS_URLS, 0);
+  })();
+  </script>
+
+</body>
+</html>
